@@ -1,0 +1,1380 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="tool_1" label="New Tool" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[
+import sys
+import toolutils
+
+outputitem = None
+inputindex = -1
+inputitem = None
+outputindex = -1
+
+num_args = 1
+h_extra_args = ''
+pane = toolutils.activePane(kwargs)
+if not isinstance(pane, hou.NetworkEditor):
+    pane = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
+    if pane is None:
+       hou.ui.displayMessage(
+               'Cannot create node: cannot find any network pane')
+       sys.exit(0)
+else: # We're creating this tool from the TAB menu inside a network editor
+    pane_node = pane.pwd()
+    if "outputnodename" in kwargs and "inputindex" in kwargs:
+        outputitem = pane_node.item(kwargs["outputnodename"])
+        inputindex = kwargs["inputindex"]
+        h_extra_args += 'set arg4 = "' + kwargs["outputnodename"] + '"\n'
+        h_extra_args += 'set arg5 = "' + str(inputindex) + '"\n'
+        num_args = 6
+    if "inputnodename" in kwargs and "outputindex" in kwargs:
+        inputitem = pane_node.item(kwargs["inputnodename"])
+        outputindex = kwargs["outputindex"]
+        h_extra_args += 'set arg6 = "' + kwargs["inputnodename"] + '"\n'
+        h_extra_args += 'set arg9 = "' + str(outputindex) + '"\n'
+        num_args = 9
+    if "autoplace" in kwargs:
+        autoplace = kwargs["autoplace"]
+    else:
+        autoplace = False
+    # If shift-clicked we want to auto append to the current
+    # node
+    if "shiftclick" in kwargs and kwargs["shiftclick"]:
+        if inputitem is None:
+            inputitem = pane.currentNode()
+            outputindex = 0
+    if "nodepositionx" in kwargs and             "nodepositiony" in kwargs:
+        try:
+            pos = [ float( kwargs["nodepositionx"] ),
+                    float( kwargs["nodepositiony"] )]
+        except:
+            pos = None
+    else:
+        pos = None
+
+    if not autoplace and not pane.listMode():
+        if pos is not None:
+            pass
+        elif outputitem is None:
+            pos = pane.selectPosition(inputitem, outputindex, None, -1)
+        else:
+            pos = pane.selectPosition(inputitem, outputindex,
+                                      outputitem, inputindex)
+
+    if pos is not None:
+        if "node_bbox" in kwargs:
+            size = kwargs["node_bbox"]
+            pos[0] -= size[0] / 2
+            pos[1] -= size[1] / 2
+        else:
+            pos[0] -= 0.573625
+            pos[1] -= 0.220625
+        h_extra_args += 'set arg2 = "' + str(pos[0]) + '"\n'
+        h_extra_args += 'set arg3 = "' + str(pos[1]) + '"\n'
+h_extra_args += 'set argc = "' + str(num_args) + '"\n'
+
+pane_node = pane.pwd()
+child_type = pane_node.childTypeCategory().nodeTypes()
+
+if 'null' not in child_type:
+   hou.ui.displayMessage(
+           'Cannot create node: incompatible pane network type')
+   sys.exit(0)
+
+# First clear the node selection
+pane_node.setSelected(False, True)
+
+h_path = pane_node.path()
+h_preamble = 'set arg1 = "' + h_path + '"\n'
+h_cmd = r'''
+if ($argc < 2 || "$arg2" == "") then
+   set arg2 = 0
+endif
+if ($argc < 3 || "$arg3" == "") then
+   set arg3 = 0
+endif
+# Automatically generated script
+# $arg1 - the path to add this node
+# $arg2 - x position of the tile
+# $arg3 - y position of the tile
+# $arg4 - input node to wire to
+# $arg5 - which input to wire to
+# $arg6 - output node to wire to
+# $arg7 - the type of this node
+# $arg8 - the node is an indirect input
+# $arg9 - index of output from $arg6
+
+\set noalias = 1
+set saved_path = `execute("oppwf")`
+opcf $arg1
+
+# Node $_obj_geo1_CONTROLLER (Sop/null)
+set _obj_geo1_CONTROLLER = `run("opadd -e -n -v null CONTROLLER")`
+oplocate -x `$arg2 + 0` -y `$arg3 + 0` $_obj_geo1_CONTROLLER
+opspareds '    parm {         name    "copyinput"         baseparm         label   "Copy Input (Note: Input will be still cooked if disabled)"         export  none     }     parm {         name    "cacheinput"         baseparm         label   "Cache Input"         export  none     }     parm {         name    "radius"         label   "radius"         type    float         default { "0" }         range   { 0 10 }     }     parm {         name    "src_pt_num"         label   "src pt num"         type    integer         default { "0" }         range   { 0 100 }     }     parm {         name    "src_pt_threshold"         label   "src pt threshold"         type    float         default { "0" }         range   { 0 1 }     }     parm {         name    "src_pt_seed"         label   "src pt seed"         type    float         default { "0" }         range   { 0 10 }     }     parm {         name    "ref_pt_num"         label   "ref pt num"         type    integer         default { "0" }         range   { 0 100000 }     }     parm {         name    "branch_variance"         label   "branch variance"         type    float         default { "0" }         range   { 0 1 }     }     parm {         name    "branch_step"         label   "branch step"         type    float         default { "0" }         range   { 0 1 }     }     parm {         name    "branch_seed"         label   "branch seed"         type    float         default { "0" }         range   { 0 10 }     }     parm {         name    "search_rad"         label   "search rad"         type    float         default { "0" }         range   { 0 1 }     }     parm {         name    "subbranch_pt_offset_ang"         label   "sub branch pt offset ang"         type    float         default { "0" }         range   { 0 90 }     }     parm {         name    "subbranch_prim_offset_ang"         label   "subbranch prim offset ang"         type    float         default { "0" }         range   { 0 90 }     }     parm {         name    "thickness"         label   "thickness"         type    float         default { "0" }         range   { 0 1 }     } ' $_obj_geo1_CONTROLLER
+opparm -V 19.5.569 $_obj_geo1_CONTROLLER radius ( 5 ) src_pt_num ( 70 ) src_pt_threshold ( 0.10000000000000001 ) src_pt_seed ( 4.9100000000000001 ) ref_pt_num ( 50000 ) branch_variance ( 0.51200000000000001 ) branch_step ( 0.157 ) branch_seed ( 5.0099999999999998 ) search_rad ( 0.5 ) subbranch_pt_offset_ang ( 15 ) subbranch_prim_offset_ang ( 60 ) thickness ( 0.17299999999999999 )
+opcolor -c 0.093999996781349182 0.36899998784065247 0.68999999761581421 $_obj_geo1_CONTROLLER
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_geo1_CONTROLLER
+opexprlanguage -s hscript $_obj_geo1_CONTROLLER
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_CONTROLLER
+opset -p on $_obj_geo1_CONTROLLER
+opcf $arg1
+
+# Node $_obj_geo1_init_points (Sop/attribwrangle)
+set _obj_geo1_init_points = `run("opadd -e -n -v attribwrangle init_points")`
+oplocate -x `$arg2 + 2.4068200000000002` -y `$arg3 + -7.5749709999999997` $_obj_geo1_init_points
+opparm $_obj_geo1_init_points  bindings ( 0 ) groupbindings ( 0 )
+opparm $_obj_geo1_init_points snippet ( 'setpointgroup(0, "base", @ptnum, 1);\nsetpointgroup(0, "src", @ptnum, 1);\nsetpointgroup(0, "end", @ptnum, 0);\nsetpointgroup(0, "fork", @ptnum, 0);\nsetpointgroup(0, "fend", @ptnum, 0);\nf@len = 0;' )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_init_points
+opexprlanguage -s hscript $_obj_geo1_init_points
+opuserdata -n '___Version___' -v '' $_obj_geo1_init_points
+opset -p on $_obj_geo1_init_points
+opcf $arg1
+
+# Node $_obj_geo1_ray1 (Sop/ray)
+set _obj_geo1_ray1 = `run("opadd -e -n -v ray ray1")`
+oplocate -x `$arg2 + 6.3304299999999998` -y `$arg3 + -3.975571` $_obj_geo1_ray1
+chblockbegin
+chadd -t 0 0 $_obj_geo1_ray1 dirx
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F @N.x $_obj_geo1_ray1/dirx
+chadd -t 0 0 $_obj_geo1_ray1 diry
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F @N.y $_obj_geo1_ray1/diry
+chadd -t 0 0 $_obj_geo1_ray1 dirz
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F @N.z $_obj_geo1_ray1/dirz
+chblockend
+opparm -V 19.5.569 $_obj_geo1_ray1 method ( minimum ) putnml ( on )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_ray1
+opexprlanguage -s hscript $_obj_geo1_ray1
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_ray1
+opset -p on $_obj_geo1_ray1
+opcf $arg1
+
+# Node $_obj_geo1_merge1 (Sop/merge)
+set _obj_geo1_merge1 = `run("opadd -e -n -v merge merge1")`
+oplocate -x `$arg2 + 7.6350200000000008` -y `$arg3 + -18.149451000000003` $_obj_geo1_merge1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_merge1
+opexprlanguage -s hscript $_obj_geo1_merge1
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_merge1
+opset -p on $_obj_geo1_merge1
+opcf $arg1
+
+# Node $_obj_geo1_BASE_GEO1 (Sop/null)
+set _obj_geo1_BASE_GEO1 = `run("opadd -e -n -v null BASE_GEO1")`
+oplocate -x `$arg2 + 9.6180699999999995` -y `$arg3 + -10.072981` $_obj_geo1_BASE_GEO1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_BASE_GEO1
+opexprlanguage -s hscript $_obj_geo1_BASE_GEO1
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_BASE_GEO1
+opset -p on $_obj_geo1_BASE_GEO1
+opcf $arg1
+
+# Node $_obj_geo1_sphere1 (Sop/sphere)
+set _obj_geo1_sphere1 = `run("opadd -e -n -v sphere sphere1")`
+oplocate -x `$arg2 + 4.520181` -y `$arg3 + 0.33584900000000001` $_obj_geo1_sphere1
+chblockbegin
+chadd -t 0 0 $_obj_geo1_sphere1 scale
+chkey -t 0 -v 1 -m 0 -a 0 -A 0 -T a  -F 'ch("../CONTROLLER/radius")' $_obj_geo1_sphere1/scale
+chblockend
+opparm -V 19.5.569 $_obj_geo1_sphere1 type ( poly ) scale ( scale ) freq ( 10 )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_sphere1
+opexprlanguage -s hscript $_obj_geo1_sphere1
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_sphere1
+opset -p on $_obj_geo1_sphere1
+opcf $arg1
+
+# Node $_obj_geo1_vector_field (Sop/attribwrangle)
+set _obj_geo1_vector_field = `run("opadd -e -n -v attribwrangle vector_field")`
+oplocate -x `$arg2 + 6.3274300000000006` -y `$arg3 + -5.3529409999999995` $_obj_geo1_vector_field
+opspareds '    group {         name    "folder1"         label   "Code"          parm {             name    "group"             baseparm             label   "Group"             export  none             bindselector points "Modify Points"                 "Select the points to affect and press Enter to complete."                 0 1 0xffffffff 0 grouptype 0         }         parm {             name    "grouptype"             baseparm             label   "Group Type"             export  none         }         parm {             name    "class"             baseparm             label   "Run Over"             export  none         }         parm {             name    "vex_numcount"             baseparm             label   "Number Count"             export  none         }         parm {             name    "vex_threadjobsize"             baseparm             label   "Thread Job Size"             export  none         }         parm {             name    "snippet"             baseparm             label   "VEXpression"             export  all         }         parm {             name    "exportlist"             baseparm             label   "Attributes to Create"             export  none         }         parm {             name    "vex_strict"             baseparm             label   "Enforce Prototypes"             export  none         }     }      group {         name    "folder1_1"         label   "Bindings"          parm {             name    "autobind"             baseparm             label   "Autobind by Name"             export  none         }         multiparm {             name    "bindings"             label    "Number of Bindings"             baseparm             default 0             parmtag { "autoscope" "0000000000000000" }             parmtag { "multistartoffset" "1" }              parm {                 name    "bindname#"                 baseparm                 label   "Attribute Name"                 export  none             }             parm {                 name    "bindparm#"                 baseparm                 label   "VEX Parameter"                 export  none             }         }          parm {             name    "groupautobind"             baseparm             label   "Autobind Groups by Name"             export  none         }         multiparm {             name    "groupbindings"             label    "Group Bindings"             baseparm             default 0             parmtag { "autoscope" "0000000000000000" }             parmtag { "multistartoffset" "1" }              parm {                 name    "bindgroupname#"                 baseparm                 label   "Group Name"                 export  none             }             parm {                 name    "bindgroupparm#"                 baseparm                 label   "VEX Parameter"                 export  none             }         }          parm {             name    "vex_cwdpath"             baseparm             label   "Evaluation Node Path"             export  none         }         parm {             name    "vex_outputmask"             baseparm             label   "Export Parameters"             export  none         }         parm {             name    "vex_updatenmls"             baseparm             label   "Update Normals If Displaced"             export  none         }         parm {             name    "vex_matchattrib"             baseparm             label   "Attribute to Match"             export  none         }         parm {             name    "vex_inplace"             baseparm             label   "Compute Results In Place"             export  none         }         parm {             name    "vex_selectiongroup"             baseparm             label   "Output Selection Group"             export  none         }     }      parm {         name    "smoothness"         label   "Smoothness"         type    float         default { "0" }         range   { 0 1 }     }     parm {         name    "max_ang"         label   "Max Ang"         type    float         default { "0" }         range   { 0 180 }     }     parm {         name    "vex_precision"         baseparm         label   "VEX Precision"         export  none     } ' $_obj_geo1_vector_field
+opparm $_obj_geo1_vector_field  bindings ( 0 ) groupbindings ( 0 )
+opparm $_obj_geo1_vector_field snippet ( 'float smoothness = chf("smoothness");\nfloat max_ang = chf("max_ang");\n\nint npt = nearpoint(1, @P);\nvector npos = point(1, "P", npt);\nvector dir = normalize(@P - npos);\n\nfloat angle = radians(anoise(@P * smoothness) * max_ang);\nvector4 rot = quaternion(angle, @N);\ndir = qrotate(rot, dir);\n\nv@dir = normalize(dir);' ) smoothness ( 0.34100000000000003 ) max_ang ( 92.700000000000003 )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_vector_field
+opexprlanguage -s hscript $_obj_geo1_vector_field
+opuserdata -n '___Version___' -v '' $_obj_geo1_vector_field
+opset -p on $_obj_geo1_vector_field
+opcf $arg1
+
+# Node $_obj_geo1_scatter2 (Sop/scatter::2.0)
+set _obj_geo1_scatter2 = `run("opadd -e -n -v scatter::2.0 scatter2")`
+oplocate -x `$arg2 + 5.3731914999999999` -y `$arg3 + -2.8096209999999999` $_obj_geo1_scatter2
+chblockbegin
+chadd -t 0 0 $_obj_geo1_scatter2 npts
+chkey -t 0 -v 1000 -m 0 -a 0 -A 0 -T a  -F 'ch("../CONTROLLER/ref_pt_num")' $_obj_geo1_scatter2/npts
+chblockend
+opparm -V 19.5.569 $_obj_geo1_scatter2 npts ( npts ) relaxpoints ( off ) vertattribs ( "" )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_scatter2
+opexprlanguage -s hscript $_obj_geo1_scatter2
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_scatter2
+opset -p on $_obj_geo1_scatter2
+opcf $arg1
+
+# Node $_obj_geo1_normal1 (Sop/normal)
+set _obj_geo1_normal1 = `run("opadd -e -n -v normal normal1")`
+oplocate -x `$arg2 + 6.1893280000000006` -y `$arg3 + -14.940450999999999` $_obj_geo1_normal1
+opparm -V 19.5.569 $_obj_geo1_normal1 origifzero ( off )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_normal1
+opexprlanguage -s hscript $_obj_geo1_normal1
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_normal1
+opset -p on $_obj_geo1_normal1
+opcf $arg1
+
+# Node $_obj_geo1_REF_PT (Sop/null)
+set _obj_geo1_REF_PT = `run("opadd -e -n -v null REF_PT")`
+oplocate -x `$arg2 + 6.0447129999999998` -y `$arg3 + -10.072981` $_obj_geo1_REF_PT
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_REF_PT
+opexprlanguage -s hscript $_obj_geo1_REF_PT
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_REF_PT
+opset -p on $_obj_geo1_REF_PT
+opcf $arg1
+
+# Node $_obj_geo1_color2 (Sop/color)
+set _obj_geo1_color2 = `run("opadd -e -n -v color color2")`
+oplocate -x `$arg2 + 9.1755399999999998` -y `$arg3 + -16.264751` $_obj_geo1_color2
+opparm $_obj_geo1_color2  ramp ( 2 )
+opparm $_obj_geo1_color2 color ( 0 0.45000000000000001 0.90000000000000002 ) ramp2pos ( 1 ) ramp2c ( 1 1 1 )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_color2
+opexprlanguage -s hscript $_obj_geo1_color2
+opuserdata -n '___Version___' -v '' $_obj_geo1_color2
+opuserdata -n '___toolcount___' -v '2' $_obj_geo1_color2
+opuserdata -n '___toolid___' -v 'sop_color' $_obj_geo1_color2
+opset -p on $_obj_geo1_color2
+opcf $arg1
+
+# Node $_obj_geo1_start_points (Sop/attribwrangle)
+set _obj_geo1_start_points = `run("opadd -e -n -v attribwrangle start_points")`
+oplocate -x `$arg2 + 2.4068200000000002` -y `$arg3 + -4.0710309999999996` $_obj_geo1_start_points
+opspareds '    group {         name    "folder1"         label   "Code"          parm {             name    "group"             baseparm             label   "Group"             export  none             bindselector points "Modify Points"                 "Select the points to affect and press Enter to complete."                 0 1 0xffffffff 0 grouptype 0         }         parm {             name    "grouptype"             baseparm             label   "Group Type"             export  none         }         parm {             name    "class"             baseparm             label   "Run Over"             export  none         }         parm {             name    "vex_numcount"             baseparm             label   "Number Count"             export  none         }         parm {             name    "vex_threadjobsize"             baseparm             label   "Thread Job Size"             export  none         }         parm {             name    "snippet"             baseparm             label   "VEXpression"             export  all         }         parm {             name    "exportlist"             baseparm             label   "Attributes to Create"             export  none         }         parm {             name    "vex_strict"             baseparm             label   "Enforce Prototypes"             export  none         }     }      group {         name    "folder1_1"         label   "Bindings"          parm {             name    "autobind"             baseparm             label   "Autobind by Name"             export  none         }         multiparm {             name    "bindings"             label    "Number of Bindings"             baseparm             default 0             parmtag { "autoscope" "0000000000000000" }             parmtag { "multistartoffset" "1" }              parm {                 name    "bindname#"                 baseparm                 label   "Attribute Name"                 export  none             }             parm {                 name    "bindparm#"                 baseparm                 label   "VEX Parameter"                 export  none             }         }          parm {             name    "groupautobind"             baseparm             label   "Autobind Groups by Name"             export  none         }         multiparm {             name    "groupbindings"             label    "Group Bindings"             baseparm             default 0             parmtag { "autoscope" "0000000000000000" }             parmtag { "multistartoffset" "1" }              parm {                 name    "bindgroupname#"                 baseparm                 label   "Group Name"                 export  none             }             parm {                 name    "bindgroupparm#"                 baseparm                 label   "VEX Parameter"                 export  none             }         }          parm {             name    "vex_cwdpath"             baseparm             label   "Evaluation Node Path"             export  none         }         parm {             name    "vex_outputmask"             baseparm             label   "Export Parameters"             export  none         }         parm {             name    "vex_updatenmls"             baseparm             label   "Update Normals If Displaced"             export  none         }         parm {             name    "vex_matchattrib"             baseparm             label   "Attribute to Match"             export  none         }         parm {             name    "vex_inplace"             baseparm             label   "Compute Results In Place"             export  none         }         parm {             name    "vex_selectiongroup"             baseparm             label   "Output Selection Group"             export  none         }     }      parm {         name    "threshold"         label   "Threshold"         type    float         default { "0" }         range   { 0 1 }     }     parm {         name    "seed"         label   "Seed"         type    float         default { "0" }         range   { 0 1 }     }     parm {         name    "vex_precision"         baseparm         label   "VEX Precision"         export  none     } ' $_obj_geo1_start_points
+opparm $_obj_geo1_start_points  bindings ( 0 ) groupbindings ( 0 )
+chblockbegin
+chadd -t 0 0 $_obj_geo1_start_points threshold
+chkey -t 0 -v 0.10000000000000001 -m 0 -a 0 -A 0 -T a  -F 'ch("../CONTROLLER/src_pt_threshold")' $_obj_geo1_start_points/threshold
+chadd -t 0 0 $_obj_geo1_start_points seed
+chkey -t 0 -v 0.27000000000000002 -m 0 -a 0 -A 0 -T a  -F 'ch("../CONTROLLER/src_pt_seed")' $_obj_geo1_start_points/seed
+chblockend
+opparm $_obj_geo1_start_points snippet ( 'float threshold = chf("threshold");\nfloat seed = chf("seed");\n\nif(rand(@ptnum + seed) < threshold){\n    setpointgroup(0, "start", @ptnum, 1);\n}' ) threshold ( threshold ) seed ( seed )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_start_points
+opexprlanguage -s hscript $_obj_geo1_start_points
+opuserdata -n '___Version___' -v '' $_obj_geo1_start_points
+opset -p on $_obj_geo1_start_points
+opcf $arg1
+
+# Node $_obj_geo1_polywire1 (Sop/polywire)
+set _obj_geo1_polywire1 = `run("opadd -e -n -v polywire polywire1")`
+oplocate -x `$arg2 + 6.1580310000000003` -y `$arg3 + -13.939150999999999` $_obj_geo1_polywire1
+chblockbegin
+chadd -t 0 0 $_obj_geo1_polywire1 radius
+chkey -t 0 -v 0.10000000000000001 -m 0 -a 0 -A 0 -T a  -F 'point("../" + opinput(".", 0), $PT, "pscale", 0) * ch("../CONTROLLER/thickness")' $_obj_geo1_polywire1/radius
+chadd -t 0 0 $_obj_geo1_polywire1 segscale1
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F '1.0 / $NSEG' $_obj_geo1_polywire1/segscale1
+chadd -t 0 0 $_obj_geo1_polywire1 segscale2
+chkey -t 0 -v 1 -m 0 -a 0 -A 0 -T a  -F '1.0 - 1.0 / $NSEG' $_obj_geo1_polywire1/segscale2
+chblockend
+opparm -V 19.5.569 $_obj_geo1_polywire1 radius ( radius ) maxscale ( 100 )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_polywire1
+opexprlanguage -s hscript $_obj_geo1_polywire1
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_polywire1
+opset -p on $_obj_geo1_polywire1
+opcf $arg1
+
+# Node $_obj_geo1_solver1 (Sop/solver)
+set _obj_geo1_solver1 = `run("opadd -e -n -v solver solver1")`
+oplocate -x `$arg2 + 6.1550310000000001` -y `$arg3 + -11.768651` $_obj_geo1_solver1
+opset -d on -r on -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_solver1
+opexprlanguage -s hscript $_obj_geo1_solver1
+opuserdata -n '___Version___' -v '' $_obj_geo1_solver1
+opset -p on $_obj_geo1_solver1
+opcf $arg1
+
+# Node $_obj_geo1_SRC_PT (Sop/null)
+set _obj_geo1_SRC_PT = `run("opadd -e -n -v null SRC_PT")`
+oplocate -x `$arg2 + 2.4152600000000004` -y `$arg3 + -10.072981` $_obj_geo1_SRC_PT
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_SRC_PT
+opexprlanguage -s hscript $_obj_geo1_SRC_PT
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_SRC_PT
+opset -p on $_obj_geo1_SRC_PT
+opcf $arg1
+
+# Node $_obj_geo1_color1 (Sop/color)
+set _obj_geo1_color1 = `run("opadd -e -n -v color color1")`
+oplocate -x `$arg2 + 6.0816970000000001` -y `$arg3 + -15.967450999999999` $_obj_geo1_color1
+opparm $_obj_geo1_color1  ramp ( 2 )
+opparm $_obj_geo1_color1 ramp2pos ( 1 ) ramp2c ( 1 1 1 )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_color1
+opexprlanguage -s hscript $_obj_geo1_color1
+opuserdata -n '___Version___' -v '' $_obj_geo1_color1
+opuserdata -n '___toolcount___' -v '2' $_obj_geo1_color1
+opuserdata -n '___toolid___' -v 'sop_color' $_obj_geo1_color1
+opset -p on $_obj_geo1_color1
+opcf $arg1
+
+# Node $_obj_geo1_grid1 (Sop/grid)
+set _obj_geo1_grid1 = `run("opadd -e -n -v grid grid1")`
+oplocate -x `$arg2 + 8.323837000000001` -y `$arg3 + 0.64102700000000001` $_obj_geo1_grid1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_grid1
+opexprlanguage -s hscript $_obj_geo1_grid1
+opset -p on $_obj_geo1_grid1
+opcf $arg1
+
+# Node $_obj_geo1_scatter1 (Sop/scatter::2.0)
+set _obj_geo1_scatter1 = `run("opadd -e -n -v scatter::2.0 scatter1")`
+oplocate -x `$arg2 + 2.4098200000000003` -y `$arg3 + -2.8096209999999999` $_obj_geo1_scatter1
+chblockbegin
+chadd -t 0 0 $_obj_geo1_scatter1 npts
+chkey -t 0 -v 1000 -m 0 -a 0 -A 0 -T a  -F 'ch("../CONTROLLER/src_pt_num")' $_obj_geo1_scatter1/npts
+chblockend
+opparm -V 19.5.569 $_obj_geo1_scatter1 npts ( npts ) vertattribs ( "" )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_scatter1
+opexprlanguage -s hscript $_obj_geo1_scatter1
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_scatter1
+opset -p on $_obj_geo1_scatter1
+opcf $arg1
+
+# Node $_obj_geo1_init_prims (Sop/attribwrangle)
+set _obj_geo1_init_prims = `run("opadd -e -n -v attribwrangle init_prims")`
+oplocate -x `$arg2 + 2.4098200000000003` -y `$arg3 + -8.5629809999999988` $_obj_geo1_init_prims
+opparm $_obj_geo1_init_prims  bindings ( 0 ) groupbindings ( 0 )
+opparm $_obj_geo1_init_prims class ( primitive ) snippet ( 'i@gen = 0;\ni@side = 0;\ni@parent = 0;\n@Cd = {1, 1, 1};' )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_init_prims
+opexprlanguage -s hscript $_obj_geo1_init_prims
+opuserdata -n '___Version___' -v '' $_obj_geo1_init_prims
+opset -p on $_obj_geo1_init_prims
+opcf $arg1
+
+# Node $_obj_geo1_attribtransfer1 (Sop/attribtransfer)
+set _obj_geo1_attribtransfer1 = `run("opadd -e -n -v attribtransfer attribtransfer1")`
+oplocate -x `$arg2 + 2.4063700000000003` -y `$arg3 + -6.3455409999999999` $_obj_geo1_attribtransfer1
+opparm -V 19.5.569 $_obj_geo1_attribtransfer1 pointattriblist ( 'dir N' )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_attribtransfer1
+opexprlanguage -s hscript $_obj_geo1_attribtransfer1
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_attribtransfer1
+opset -p on $_obj_geo1_attribtransfer1
+opcf $arg1
+
+# Node $_obj_geo1_normal2 (Sop/normal)
+set _obj_geo1_normal2 = `run("opadd -e -n -v normal normal2")`
+oplocate -x `$arg2 + 9.1755399999999998` -y `$arg3 + -15.264751` $_obj_geo1_normal2
+opparm -V 19.5.569 $_obj_geo1_normal2 origifzero ( off )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_normal2
+opexprlanguage -s hscript $_obj_geo1_normal2
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_normal2
+opset -p on $_obj_geo1_normal2
+opcf $arg1
+
+# Node $_obj_geo1_len_pscale (Sop/attribwrangle)
+set _obj_geo1_len_pscale = `run("opadd -e -n -v attribwrangle len_pscale")`
+oplocate -x `$arg2 + 6.1550310000000001` -y `$arg3 + -12.899550999999999` $_obj_geo1_len_pscale
+opspareds '    group {         name    "folder1"         label   "Code"          parm {             name    "group"             baseparm             label   "Group"             export  none             bindselector points "Modify Points"                 "Select the points to affect and press Enter to complete."                 0 1 0xffffffff 0 grouptype 0         }         parm {             name    "grouptype"             baseparm             label   "Group Type"             export  none         }         parm {             name    "class"             baseparm             label   "Run Over"             export  none         }         parm {             name    "vex_numcount"             baseparm             label   "Number Count"             export  none         }         parm {             name    "vex_threadjobsize"             baseparm             label   "Thread Job Size"             export  none         }         parm {             name    "snippet"             baseparm             label   "VEXpression"             export  all         }         parm {             name    "exportlist"             baseparm             label   "Attributes to Create"             export  none         }         parm {             name    "vex_strict"             baseparm             label   "Enforce Prototypes"             export  none         }     }      group {         name    "folder1_1"         label   "Bindings"          parm {             name    "autobind"             baseparm             label   "Autobind by Name"             export  none         }         multiparm {             name    "bindings"             label    "Number of Bindings"             baseparm             default 0             parmtag { "autoscope" "0000000000000000" }             parmtag { "multistartoffset" "1" }              parm {                 name    "bindname#"                 baseparm                 label   "Attribute Name"                 export  none             }             parm {                 name    "bindparm#"                 baseparm                 label   "VEX Parameter"                 export  none             }         }          parm {             name    "groupautobind"             baseparm             label   "Autobind Groups by Name"             export  none         }         multiparm {             name    "groupbindings"             label    "Group Bindings"             baseparm             default 0             parmtag { "autoscope" "0000000000000000" }             parmtag { "multistartoffset" "1" }              parm {                 name    "bindgroupname#"                 baseparm                 label   "Group Name"                 export  none             }             parm {                 name    "bindgroupparm#"                 baseparm                 label   "VEX Parameter"                 export  none             }         }          parm {             name    "vex_cwdpath"             baseparm             label   "Evaluation Node Path"             export  none         }         parm {             name    "vex_outputmask"             baseparm             label   "Export Parameters"             export  none         }         parm {             name    "vex_updatenmls"             baseparm             label   "Update Normals If Displaced"             export  none         }         parm {             name    "vex_matchattrib"             baseparm             label   "Attribute to Match"             export  none         }         parm {             name    "vex_inplace"             baseparm             label   "Compute Results In Place"             export  none         }         parm {             name    "vex_selectiongroup"             baseparm             label   "Output Selection Group"             export  none         }     }      parm {         name    "exp"         label   "Exp"         type    float         default { "0" }         range   { 0 1 }     }     parm {         name    "vex_precision"         baseparm         label   "VEX Precision"         export  none     } ' $_obj_geo1_len_pscale
+opparm $_obj_geo1_len_pscale  bindings ( 0 ) groupbindings ( 0 )
+opparm $_obj_geo1_len_pscale snippet ( 'float exp = chf("exp");\n\n@pscale *= pow(fit(@len, 0, 1, 0.1, 1), exp);\n@pscale *= fit01(rand(@ptnum), 0.9, 1.0);\n@pscale = clamp(@pscale, 0, 0.5);\n' ) exp ( 1 )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_len_pscale
+opexprlanguage -s hscript $_obj_geo1_len_pscale
+opuserdata -n '___Version___' -v '' $_obj_geo1_len_pscale
+opset -p on $_obj_geo1_len_pscale
+opcf $arg1
+
+# Node $_obj_geo1_BASE_GEO (Sop/null)
+set _obj_geo1_BASE_GEO = `run("opadd -e -n -v null BASE_GEO")`
+oplocate -x `$arg2 + 4.520181` -y `$arg3 + -0.94650400000000001` $_obj_geo1_BASE_GEO
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_geo1_BASE_GEO
+opexprlanguage -s hscript $_obj_geo1_BASE_GEO
+opuserdata -n '___Version___' -v '19.5.569' $_obj_geo1_BASE_GEO
+opset -p on $_obj_geo1_BASE_GEO
+
+opcf $arg1
+opcf $arg1
+opwire -n $_obj_geo1_attribtransfer1 -0 $_obj_geo1_init_points
+opcf $arg1
+opwire -n $_obj_geo1_scatter2 -0 $_obj_geo1_ray1
+opwire -n $_obj_geo1_BASE_GEO -1 $_obj_geo1_ray1
+opcf $arg1
+opwire -n $_obj_geo1_color1 -0 $_obj_geo1_merge1
+opwire -n $_obj_geo1_color2 -1 $_obj_geo1_merge1
+opcf $arg1
+opwire -n $_obj_geo1_BASE_GEO -0 $_obj_geo1_BASE_GEO1
+opcf $arg1
+opcf $arg1
+opwire -n $_obj_geo1_ray1 -0 $_obj_geo1_vector_field
+opwire -n $_obj_geo1_start_points -1 $_obj_geo1_vector_field
+opcf $arg1
+opwire -n $_obj_geo1_BASE_GEO -0 $_obj_geo1_scatter2
+opcf $arg1
+opwire -n $_obj_geo1_polywire1 -0 $_obj_geo1_normal1
+opcf $arg1
+opwire -n $_obj_geo1_vector_field -0 $_obj_geo1_REF_PT
+opcf $arg1
+opwire -n $_obj_geo1_normal2 -0 $_obj_geo1_color2
+opcf $arg1
+opwire -n $_obj_geo1_scatter1 -0 $_obj_geo1_start_points
+opcf $arg1
+opwire -n $_obj_geo1_len_pscale -0 $_obj_geo1_polywire1
+opcf $arg1
+opwire -n $_obj_geo1_SRC_PT -0 $_obj_geo1_solver1
+opwire -n $_obj_geo1_REF_PT -1 $_obj_geo1_solver1
+opwire -n $_obj_geo1_BASE_GEO1 -2 $_obj_geo1_solver1
+opcf $arg1
+opwire -n $_obj_geo1_init_prims -0 $_obj_geo1_SRC_PT
+opcf $arg1
+opwire -n $_obj_geo1_normal1 -0 $_obj_geo1_color1
+opcf $arg1
+opcf $arg1
+opwire -n $_obj_geo1_BASE_GEO -0 $_obj_geo1_scatter1
+opcf $arg1
+opwire -n $_obj_geo1_init_points -0 $_obj_geo1_init_prims
+opcf $arg1
+opwire -n $_obj_geo1_start_points -0 $_obj_geo1_attribtransfer1
+opwire -n $_obj_geo1_vector_field -1 $_obj_geo1_attribtransfer1
+opcf $arg1
+opwire -n $_obj_geo1_BASE_GEO1 -0 $_obj_geo1_normal2
+opcf $arg1
+opwire -n $_obj_geo1_solver1 -0 $_obj_geo1_len_pscale
+opcf $arg1
+opwire -n $_obj_geo1_sphere1 -0 $_obj_geo1_BASE_GEO
+
+set oidx = 0
+if ($argc >= 9 && "$arg9" != "") then
+    set oidx = $arg9
+endif
+
+if ($argc >= 5 && "$arg4" != "") then
+    set output = $_obj_geo1_BASE_GEO
+    opwire -n $output -$arg5 $arg4
+endif
+if ($argc >= 6 && "$arg6" != "") then
+    set input = $_obj_geo1_CONTROLLER
+    if ($arg8) then
+        opwire -n -i $arg6 -0 $input
+    else
+        opwire -n -o $oidx $arg6 -0 $input
+    endif
+endif
+opcf $saved_path
+'''
+hou.hscript(h_preamble + h_extra_args + h_cmd)
+]]></script>
+  </tool>
+
+  <tool name="box_nodes_script" label="box1 Nodes Script" icon="MISC_generic">
+    <toolMenuContext name="network">
+      <contextOpType>Sop/box</contextOpType>
+    </toolMenuContext>
+    <script scriptType="python"><![CDATA[
+import sys
+import toolutils
+
+outputitem = None
+inputindex = -1
+inputitem = None
+outputindex = -1
+
+num_args = 1
+h_extra_args = ''
+pane = toolutils.activePane(kwargs)
+if not isinstance(pane, hou.NetworkEditor):
+    pane = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
+    if pane is None:
+       hou.ui.displayMessage(
+               'Cannot create node: cannot find any network pane')
+       sys.exit(0)
+else: # We're creating this tool from the TAB menu inside a network editor
+    pane_node = pane.pwd()
+    if "outputnodename" in kwargs and "inputindex" in kwargs:
+        outputitem = pane_node.item(kwargs["outputnodename"])
+        inputindex = kwargs["inputindex"]
+        h_extra_args += 'set arg4 = "' + kwargs["outputnodename"] + '"\n'
+        h_extra_args += 'set arg5 = "' + str(inputindex) + '"\n'
+        num_args = 6
+    if "inputnodename" in kwargs and "outputindex" in kwargs:
+        inputitem = pane_node.item(kwargs["inputnodename"])
+        outputindex = kwargs["outputindex"]
+        h_extra_args += 'set arg6 = "' + kwargs["inputnodename"] + '"\n'
+        h_extra_args += 'set arg9 = "' + str(outputindex) + '"\n'
+        num_args = 9
+    if "autoplace" in kwargs:
+        autoplace = kwargs["autoplace"]
+    else:
+        autoplace = False
+    # If shift-clicked we want to auto append to the current
+    # node
+    if "shiftclick" in kwargs and kwargs["shiftclick"]:
+        if inputitem is None:
+            inputitem = pane.currentNode()
+            outputindex = 0
+    if "nodepositionx" in kwargs and             "nodepositiony" in kwargs:
+        try:
+            pos = [ float( kwargs["nodepositionx"] ),
+                    float( kwargs["nodepositiony"] )]
+        except:
+            pos = None
+    else:
+        pos = None
+
+    if not autoplace and not pane.listMode():
+        if pos is not None:
+            pass
+        elif outputitem is None:
+            pos = pane.selectPosition(inputitem, outputindex, None, -1)
+        else:
+            pos = pane.selectPosition(inputitem, outputindex,
+                                      outputitem, inputindex)
+
+    if pos is not None:
+        if "node_bbox" in kwargs:
+            size = kwargs["node_bbox"]
+            pos[0] -= size[0] / 2
+            pos[1] -= size[1] / 2
+        else:
+            pos[0] -= 0.573625
+            pos[1] -= 0.220625
+        h_extra_args += 'set arg2 = "' + str(pos[0]) + '"\n'
+        h_extra_args += 'set arg3 = "' + str(pos[1]) + '"\n'
+h_extra_args += 'set argc = "' + str(num_args) + '"\n'
+
+pane_node = pane.pwd()
+child_type = pane_node.childTypeCategory().nodeTypes()
+
+if 'dopnet' not in child_type:
+   hou.ui.displayMessage(
+           'Cannot create node: incompatible pane network type')
+   sys.exit(0)
+
+# First clear the node selection
+pane_node.setSelected(False, True)
+
+h_path = pane_node.path()
+h_preamble = 'set arg1 = "' + h_path + '"\n'
+h_cmd = r'''
+if ($argc < 2 || "$arg2" == "") then
+   set arg2 = 0
+endif
+if ($argc < 3 || "$arg3" == "") then
+   set arg3 = 0
+endif
+# Automatically generated script
+# $arg1 - the path to add this node
+# $arg2 - x position of the tile
+# $arg3 - y position of the tile
+# $arg4 - input node to wire to
+# $arg5 - which input to wire to
+# $arg6 - output node to wire to
+# $arg7 - the type of this node
+# $arg8 - the node is an indirect input
+# $arg9 - index of output from $arg6
+
+\set noalias = 1
+set saved_path = `execute("oppwf")`
+opcf $arg1
+
+# Node $_obj_boxes_box1 (Sop/box)
+set _obj_boxes_box1 = `run("opadd -e -n -v box box1")`
+oplocate -x `$arg2 + 0` -y `$arg3 + 0` $_obj_boxes_box1
+chblockbegin
+chadd -t 0 0 $_obj_boxes_box1 ty
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F 'ch("sizey")/2+0.1' $_obj_boxes_box1/ty
+chblockend
+opparm -V 19.5.640 $_obj_boxes_box1 t ( 0 ty 0 ) vertexnormals ( on )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_box1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_box1
+opexprlanguage -s hscript $_obj_boxes_box1
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_box1
+opset -p on $_obj_boxes_box1
+opcf $arg1
+
+# Node $_obj_boxes_duplicate (Sop/duplicate)
+set _obj_boxes_duplicate = `run("opadd -e -n -v duplicate duplicate")`
+oplocate -x `$arg2 + 0` -y `$arg3 + -4.5180059999999997` $_obj_boxes_duplicate
+opparm -V 19.5.640 $_obj_boxes_duplicate ncy ( 5 ) t ( -11.5 0 0 )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_duplicate
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_duplicate
+opexprlanguage -s hscript $_obj_boxes_duplicate
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_duplicate
+opset -p on $_obj_boxes_duplicate
+opcf $arg1
+
+# Node $_obj_boxes_color1 (Sop/color)
+set _obj_boxes_color1 = `run("opadd -e -n -v color color1")`
+oplocate -x `$arg2 + 0` -y `$arg3 + -1.1295000000000002` $_obj_boxes_color1
+opparm $_obj_boxes_color1  ramp ( 2 )
+opparm $_obj_boxes_color1 group ( 1 ) class ( 1 ) color ( 0.57999999999999996 0.02 0.02 ) ramp2pos ( 1 ) ramp2c ( 1 1 1 )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_color1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c off -e on -b off $_obj_boxes_color1
+opexprlanguage -s hscript $_obj_boxes_color1
+opuserdata -n '___Version___' -v '' $_obj_boxes_color1
+opset -p on $_obj_boxes_color1
+opcf $arg1
+
+# Node $_obj_boxes_color3 (Sop/color)
+set _obj_boxes_color3 = `run("opadd -e -n -v color color3")`
+oplocate -x `$arg2 + 0` -y `$arg3 + -3.388506` $_obj_boxes_color3
+opparm $_obj_boxes_color3  ramp ( 2 )
+opparm $_obj_boxes_color3 group ( 5 ) class ( 1 ) color ( 0.002 0.53000000000000003 0.002 ) ramp2pos ( 1 ) ramp2c ( 1 1 1 )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_color3
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c off -e on -b off $_obj_boxes_color3
+opexprlanguage -s hscript $_obj_boxes_color3
+opuserdata -n '___Version___' -v '' $_obj_boxes_color3
+opset -p on $_obj_boxes_color3
+opcf $arg1
+
+# Node $_obj_boxes_assemble (Sop/assemble)
+set _obj_boxes_assemble = `run("opadd -e -n -v assemble assemble")`
+oplocate -x `$arg2 + 0` -y `$arg3 + -5.6475` $_obj_boxes_assemble
+opparm -V 2 $_obj_boxes_assemble connect ( off ) pack_geo ( on ) createpath ( on ) path ( 'op:`opfullpath(\'.\')/pack' )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_assemble
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_assemble
+opexprlanguage -s hscript $_obj_boxes_assemble
+opuserdata -n '___Version___' -v '2' $_obj_boxes_assemble
+opuserdata -n '___toolcount___' -v '5' $_obj_boxes_assemble
+opuserdata -n '___toolid___' -v 'dop_rbdfracturedobject' $_obj_boxes_assemble
+opset -p on $_obj_boxes_assemble
+opcf $arg1
+
+# Node $_obj_boxes_color2 (Sop/color)
+set _obj_boxes_color2 = `run("opadd -e -n -v color color2")`
+oplocate -x `$arg2 + 0` -y `$arg3 + -2.2589999999999999` $_obj_boxes_color2
+opparm $_obj_boxes_color2  ramp ( 2 )
+opparm $_obj_boxes_color2 group ( 2 ) class ( 1 ) color ( 0 0.22 1 ) ramp2pos ( 1 ) ramp2c ( 1 1 1 )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_color2
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c off -e on -b off $_obj_boxes_color2
+opexprlanguage -s hscript $_obj_boxes_color2
+opuserdata -n '___Version___' -v '' $_obj_boxes_color2
+opset -p on $_obj_boxes_color2
+opcf $arg1
+
+# Node $_obj_boxes_pointwrangle (Sop/attribwrangle)
+set _obj_boxes_pointwrangle = `run("opadd -e -n -v attribwrangle pointwrangle")`
+oplocate -x `$arg2 + 0` -y `$arg3 + -6.7770000000000001` $_obj_boxes_pointwrangle
+opparm $_obj_boxes_pointwrangle  bindings ( 0 ) groupbindings ( 0 )
+opparm $_obj_boxes_pointwrangle snippet ( 'if (@ptnum == 0)\n{\n    v@v = set(-55, 0, 0);\n    v@w = set(0, 0, 6);\n}\nelse\n{\n    v@v = set(4, 0, 0);\n    v@w = set(0, 0, 0);\n}\n' )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_pointwrangle
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c off -e on -b off $_obj_boxes_pointwrangle
+opexprlanguage -s hscript $_obj_boxes_pointwrangle
+opuserdata -n '___Version___' -v '' $_obj_boxes_pointwrangle
+opset -p on $_obj_boxes_pointwrangle
+opcf $arg1
+
+# Node $_obj_boxes_dopnet (Sop/dopnet)
+set _obj_boxes_dopnet = `run("opadd -e -n -v dopnet dopnet")`
+oplocate -x `$arg2 + 0.044760000000000133` -y `$arg3 + -7.9847599999999996` $_obj_boxes_dopnet
+opparm $_obj_boxes_dopnet  numobj ( 1 )
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet timestep
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F 'ch("timescale")/(ch("substep")*$FPS)' $_obj_boxes_dopnet/timestep
+chadd -t 0 0 $_obj_boxes_dopnet timeoffset
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F '(ch("startframe")-1)/$FPS' $_obj_boxes_dopnet/timeoffset
+chblockend
+opparm -V 19.5.640 $_obj_boxes_dopnet stdswitcher ( 1 1 1 ) compresssims ( off ) explicitcachename ( '$HIP/cache_${OS}_$SF.sim' ) objname1 ( boxes )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet
+opset -d on -r on -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet
+opexprlanguage -s hscript $_obj_boxes_dopnet
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet
+opcf $_obj_boxes_dopnet
+
+# Node $_obj_boxes_dopnet_boxes (Dop/rbdpackedobject)
+set _obj_boxes_dopnet_boxes = `run("opadd -e -n -v rbdpackedobject boxes")`
+oplocate -x `$arg2 + 3.63062` -y `$arg3 + -4.9649000000000001` $_obj_boxes_dopnet_boxes
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet_boxes createframe
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F 'ch(opcreator(".")+"/startframe")' $_obj_boxes_dopnet_boxes/createframe
+chadd -t 0 0 $_obj_boxes_dopnet_boxes bullet_shrink_amount
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F 'ch("bullet_collision_margin")' $_obj_boxes_dopnet_boxes/bullet_shrink_amount
+chblockend
+opparm -V 4 $_obj_boxes_dopnet_boxes soppath ( '`opinputpath("..", 0)`' ) inheritvelocity ( on ) inheritpivot ( off ) bounce ( 0.050000000000000003 )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_boxes
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_boxes
+opexprlanguage -s hscript $_obj_boxes_dopnet_boxes
+opuserdata -n '___Version___' -v '4' $_obj_boxes_dopnet_boxes
+opuserdata -n '___toolcount___' -v '3' $_obj_boxes_dopnet_boxes
+opuserdata -n '___toolid___' -v 'dop_rbdpackedobject' $_obj_boxes_dopnet_boxes
+
+# Node $_obj_boxes_dopnet_bullet (Dop/bulletrbdsolver)
+set _obj_boxes_dopnet_bullet = `run("opadd -e -n -v bulletrbdsolver bullet")`
+oplocate -x `$arg2 + 3.62717` -y `$arg3 + -6.29373` $_obj_boxes_dopnet_bullet
+opparm -V 19.5.640 $_obj_boxes_dopnet_bullet implicitdrag ( off ) constraintsolvertype ( gaussseidelisland )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_bullet
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_bullet
+opexprlanguage -s hscript $_obj_boxes_dopnet_bullet
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_bullet
+
+# Node $_obj_boxes_dopnet_connet (Dop/constraintnetwork)
+set _obj_boxes_dopnet_connet = `run("opadd -e -n -v constraintnetwork connet")`
+oplocate -x `$arg2 + 6.1102100000000004` -y `$arg3 + -7.4244899999999996` $_obj_boxes_dopnet_connet
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet_connet reloadfromsops
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F '$SF == 1' $_obj_boxes_dopnet_connet/reloadfromsops
+chblockend
+opparm -V 1 $_obj_boxes_dopnet_connet usetransform ( on ) reloadfromsops ( reloadfromsops )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_connet
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c off -e on -b off $_obj_boxes_dopnet_connet
+opexprlanguage -s hscript $_obj_boxes_dopnet_connet
+opuserdata -n '___Version___' -v '1' $_obj_boxes_dopnet_connet
+opuserdata -n '___toolcount___' -v '7' $_obj_boxes_dopnet_connet
+opuserdata -n '___toolid___' -v 'dynamics_gluenetwork' $_obj_boxes_dopnet_connet
+
+# Node $_obj_boxes_dopnet_conrel_hard (Dop/hardconrel)
+set _obj_boxes_dopnet_conrel_hard = `run("opadd -e -n -v hardconrel conrel_hard")`
+oplocate -x `$arg2 + 3.51261` -y `$arg3 + -2.0381200000000002` $_obj_boxes_dopnet_conrel_hard
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet_conrel_hard activation
+chkey -t 0 -v 1 -m 0 -a 0 -A 0 -T a  -F 'constant()' $_obj_boxes_dopnet_conrel_hard/activation
+chblockend
+opparm -V 19.5.640 $_obj_boxes_dopnet_conrel_hard guideswitcher ( 1 1 ) color ( 1 0 0 )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_conrel_hard
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_conrel_hard
+opexprlanguage -s hscript $_obj_boxes_dopnet_conrel_hard
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_conrel_hard
+
+# Node $_obj_boxes_dopnet_merge (Dop/merge)
+set _obj_boxes_dopnet_merge = `run("opadd -e -n -v merge merge")`
+oplocate -x `$arg2 + 3.7247599999999998` -y `$arg3 + -8.3712700000000009` $_obj_boxes_dopnet_merge
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet_merge activation
+chkey -t 0 -v 1 -m 0 -a 0 -A 0 -T a  -F 'constant()' $_obj_boxes_dopnet_merge/activation
+chblockend
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_merge
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_merge
+opexprlanguage -s hscript $_obj_boxes_dopnet_merge
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_merge
+
+# Node $_obj_boxes_dopnet_ground (Dop/groundplane)
+set _obj_boxes_dopnet_ground = `run("opadd -e -n -v groundplane ground")`
+oplocate -x `$arg2 + 1.3714200000000001` -y `$arg3 + -6.9405700000000001` $_obj_boxes_dopnet_ground
+opparm $_obj_boxes_dopnet_ground display ( off )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_ground
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c off -e on -b off $_obj_boxes_dopnet_ground
+opexprlanguage -s hscript $_obj_boxes_dopnet_ground
+opuserdata -n '___Version___' -v '' $_obj_boxes_dopnet_ground
+opuserdata -n '___toolcount___' -v '1' $_obj_boxes_dopnet_ground
+opuserdata -n '___toolid___' -v 'dop_groundplane' $_obj_boxes_dopnet_ground
+
+# Node $_obj_boxes_dopnet_gravity (Dop/gravity)
+set _obj_boxes_dopnet_gravity = `run("opadd -e -n -v gravity gravity")`
+oplocate -x `$arg2 + 3.7247599999999998` -y `$arg3 + -9.5007699999999993` $_obj_boxes_dopnet_gravity
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet_gravity activation
+chkey -t 0 -v 1 -m 0 -a 0 -A 0 -T a  -F 'constant()' $_obj_boxes_dopnet_gravity/activation
+chblockend
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_gravity
+opset -d on -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_gravity
+opexprlanguage -s hscript $_obj_boxes_dopnet_gravity
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_gravity
+
+# Node $_obj_boxes_dopnet_sopsolver (Dop/sopsolver)
+set _obj_boxes_dopnet_sopsolver = `run("opadd -e -n -v sopsolver sopsolver")`
+oplocate -x `$arg2 + 8.3968699999999998` -y `$arg3 + -6.2020400000000002` $_obj_boxes_dopnet_sopsolver
+opparm $_obj_boxes_dopnet_sopsolver  numinputs ( 0 ) numoutputs ( 0 ) numstamps ( 0 )
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver usesoppath ( off ) uniquedataname ( on )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_sopsolver
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver
+opcf $_obj_boxes_dopnet_sopsolver
+
+# Node $_obj_boxes_dopnet_sopsolver_relationship_geometry (Sop/object_merge)
+set _obj_boxes_dopnet_sopsolver_relationship_geometry = `run("opadd -e -n -v object_merge relationship_geometry")`
+oplocate -x `$arg2 + 6.3486599999999997` -y `$arg3 + -7.6813000000000002` $_obj_boxes_dopnet_sopsolver_relationship_geometry
+opspareds '    group {         name    "folder0"         label   "Object Merge"          parm {             name    "xformtype"             baseparm             label   "Transform"             export  none         }         parm {             name    "xformpath"             baseparm             label   "Transform Object"             export  none         }         parm {             name    "invertxform"             baseparm             label   "Invert Transform"             export  none         }         parm {             name    "createptgroups"             baseparm             label   "Create Point Groups"             export  none         }         parm {             name    "ptgroupprefix"             baseparm             label   "Point Group Prefix"             export  none         }         parm {             name    "createprimgroups"             baseparm             label   "Create Primitive Groups"             export  none         }         parm {             name    "primgroupprefix"             baseparm             label   "Primitive Group Prefix"             export  none         }         parm {             name    "verbosegroups"             baseparm             label   "Verbose Group Names"             export  none         }         parm {             name    "createptstring"             baseparm             label   "Create Per-Point Path"             export  none         }         parm {             name    "createprimstring"             baseparm             label   "Create Per-Primitive Path"             export  none         }         parm {             name    "pathattrib"             baseparm             label   "Path Attribute"             export  none         }         parm {             name    "pack"             baseparm             label   "Pack Geometry Before Merging"             export  none         }         parm {             name    "pivot"             baseparm             label   "Pivot Location"             export  none         }         parm {             name    "viewportlod"             baseparm             label   "Display As"             export  none         }         parm {             name    "addpath"             baseparm             label   "Add Path Attribute"             export  none         }         parm {             name    "_separator"             baseparm             label   ""             export  none         }         multiparm {             name    "numobj"             label    "Number of Objects"             baseparm             default 1              parm {                 name    "enable#"                 baseparm                 label   "Enable Merge #"                 export  none             }             parm {                 name    "objpath#"                 baseparm                 label   "Object #"                 export  none             }             parm {                 name    "group#"                 baseparm                 label   "Group #"                 export  none             }             parm {                 name    "expand#"                 baseparm                 label   "Expand Group #"                 export  none             }         }      }      group {         name    "folder0_1"         label   "Custom Parameters"          parm {             name    "relnode"             label   "Relationship"             type    oppath             default { "../.." }             range   { 0 1 }             parmtag { "opfilter" "!!DOP!!" }             parmtag { "oprelative" "." }         }     }      parm {         name    "suffixfirstgroup"         baseparm         label   "Add Suffix to First Group"         export  none     } ' $_obj_boxes_dopnet_sopsolver_relationship_geometry
+opparm $_obj_boxes_dopnet_sopsolver_relationship_geometry  numobj ( 1 )
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_relationship_geometry objpath1 ( '`stamps("..", "DATAPATH", chsop("relnode") + ":Relationships/" + chs(chsop("relnode") + "/relname") + "/" + chs(chsop("relnode") + "/relationship/dataname") + "/Geometry")`' ) folder0 ( 1 1 ) relnode ( ../../connet )
+opcolor -c 0.60000002384185791 0.40000000596046448 1 $_obj_boxes_dopnet_sopsolver_relationship_geometry
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver_relationship_geometry
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_relationship_geometry
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_relationship_geometry
+
+# Node $_obj_boxes_dopnet_sopsolver_merge (Sop/merge)
+set _obj_boxes_dopnet_sopsolver_merge = `run("opadd -e -n -v merge merge")`
+oplocate -x `$arg2 + 5.9159800000000002` -y `$arg3 + -16.255700000000001` $_obj_boxes_dopnet_sopsolver_merge
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_sopsolver_merge
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver_merge
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_merge
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_merge
+
+# Node $_obj_boxes_dopnet_sopsolver_configure_connet (Sop/attribwrangle)
+set _obj_boxes_dopnet_sopsolver_configure_connet = `run("opadd -e -n -v attribwrangle configure_connet")`
+oplocate -x `$arg2 + -0.76188100000000003` -y `$arg3 + -10.821899999999999` $_obj_boxes_dopnet_sopsolver_configure_connet
+opparm $_obj_boxes_dopnet_sopsolver_configure_connet  bindings ( 0 ) groupbindings ( 0 )
+opparm $_obj_boxes_dopnet_sopsolver_configure_connet class ( primitive ) snippet ( 's@constraint_name = "ConRelHard";\ns@constraint_type = "all";\n//f@restlength = primintrinsic(0, "measuredperimeter", @id);' )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_sopsolver_configure_connet
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c off -e on -b off $_obj_boxes_dopnet_sopsolver_configure_connet
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_configure_connet
+opuserdata -n '___Version___' -v '' $_obj_boxes_dopnet_sopsolver_configure_connet
+
+# Node $_obj_boxes_dopnet_sopsolver_add (Sop/add)
+set _obj_boxes_dopnet_sopsolver_add = `run("opadd -e -n -v add add")`
+oplocate -x `$arg2 + -3.0758999999999999` -y `$arg3 + -7.5811999999999999` $_obj_boxes_dopnet_sopsolver_add
+opparm $_obj_boxes_dopnet_sopsolver_add  points ( 1 ) prims ( 1 )
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_add stdswitcher ( 1 1 1 ) keep ( on ) points ( 1 ) switcher ( 1 1 ) usept0 ( off )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_sopsolver_add
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver_add
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_add
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_add
+
+# Node $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo (Sop/dopimport)
+set _obj_boxes_dopnet_sopsolver_fetch_transformed_geo = `run("opadd -e -n -v dopimport fetch_transformed_geo")`
+oplocate -x `$arg2 + 2.3368899999999999` -y `$arg3 + -1.9075899999999999` $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo integrateovertime
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F '1/$FPS' $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo/integrateovertime
+chblockend
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo doppath ( ../.. ) objpattern ( boxes ) importstyle ( pack )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo
+
+# Node $_obj_boxes_dopnet_sopsolver_transform_to_initial_frame (Sop/attribwrangle)
+set _obj_boxes_dopnet_sopsolver_transform_to_initial_frame = `run("opadd -e -n -v attribwrangle transform_to_initial_frame")`
+oplocate -x `$arg2 + 2.3338899999999998` -y `$arg3 + -12.256` $_obj_boxes_dopnet_sopsolver_transform_to_initial_frame
+opparm $_obj_boxes_dopnet_sopsolver_transform_to_initial_frame  bindings ( 0 ) groupbindings ( 0 )
+opparm $_obj_boxes_dopnet_sopsolver_transform_to_initial_frame snippet ( '// Set position of the anchors relative to initial frame.\nmatrix t = primintrinsic(1, "packedfulltransform", i@id);\nv@P = v@P * invert(t);\n\n// Un-rotate the same way.\nmatrix3 r = (matrix3) t;\np@orient = quaternion(invert(r));' )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_sopsolver_transform_to_initial_frame
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c off -e on -b off $_obj_boxes_dopnet_sopsolver_transform_to_initial_frame
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_transform_to_initial_frame
+opuserdata -n '___Version___' -v '' $_obj_boxes_dopnet_sopsolver_transform_to_initial_frame
+
+# Node $_obj_boxes_dopnet_sopsolver_unnecessary_cleanup (Sop/attribdelete)
+set _obj_boxes_dopnet_sopsolver_unnecessary_cleanup = `run("opadd -e -n -v attribdelete unnecessary_cleanup")`
+oplocate -x `$arg2 + -0.76233099999999998` -y `$arg3 + -6.4222000000000001` $_obj_boxes_dopnet_sopsolver_unnecessary_cleanup
+opparm $_obj_boxes_dopnet_sopsolver_unnecessary_cleanup ptdel ( '* ^name ^orient ^id' ) vtxdel ( * ) primdel ( * ) dtldel ( * )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_sopsolver_unnecessary_cleanup
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c off -e on -b off $_obj_boxes_dopnet_sopsolver_unnecessary_cleanup
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_unnecessary_cleanup
+opuserdata -n '___Version___' -v '' $_obj_boxes_dopnet_sopsolver_unnecessary_cleanup
+
+# Node $_obj_boxes_dopnet_sopsolver_foreach_end1 (Sop/block_end)
+set _obj_boxes_dopnet_sopsolver_foreach_end1 = `run("opadd -e -n -v block_end foreach_end1")`
+oplocate -x `$arg2 + -10.267799999999999` -y `$arg3 + -11.111599999999999` $_obj_boxes_dopnet_sopsolver_foreach_end1
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_foreach_end1 itermethod ( pieces ) method ( merge ) attrib ( name ) blockpath ( ../foreach_begin1 ) templatepath ( ../foreach_begin1 )
+opcolor -c 0.75 0.40000000596046448 0 $_obj_boxes_dopnet_sopsolver_foreach_end1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver_foreach_end1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_foreach_end1
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_foreach_end1
+
+# Node $_obj_boxes_dopnet_sopsolver_foreach_begin1 (Sop/block_begin)
+set _obj_boxes_dopnet_sopsolver_foreach_begin1 = `run("opadd -e -n -v block_begin foreach_begin1")`
+oplocate -x `$arg2 + -10.2803` -y `$arg3 + -7.2610200000000003` $_obj_boxes_dopnet_sopsolver_foreach_begin1
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_foreach_begin1 method ( piece ) blockpath ( ../foreach_end1 )
+opcolor -c 0.75 0.40000000596046448 0 $_obj_boxes_dopnet_sopsolver_foreach_begin1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver_foreach_begin1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_foreach_begin1
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_foreach_begin1
+
+# Node $_obj_boxes_dopnet_sopsolver_blast2 (Sop/blast)
+set _obj_boxes_dopnet_sopsolver_blast2 = `run("opadd -e -n -v blast blast2")`
+oplocate -x `$arg2 + -6.3917299999999999` -y `$arg3 + -3.9369000000000001` $_obj_boxes_dopnet_sopsolver_blast2
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_blast2 group ( 0 ) grouptype ( prims ) negate ( on ) removegrp ( on )
+opset -d off -r off -h on -f off -y off -t off -l off -s off -u off -F on -c on -e on -b on $_obj_boxes_dopnet_sopsolver_blast2
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_blast2
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_blast2
+opuserdata -n '___toolcount___' -v '2' $_obj_boxes_dopnet_sopsolver_blast2
+opuserdata -n '___toolid___' -v 'generic_delete' $_obj_boxes_dopnet_sopsolver_blast2
+
+# Node $_obj_boxes_dopnet_sopsolver_add1 (Sop/add)
+set _obj_boxes_dopnet_sopsolver_add1 = `run("opadd -e -n -v add add1")`
+oplocate -x `$arg2 + -6.3917299999999999` -y `$arg3 + -5.5469600000000003` $_obj_boxes_dopnet_sopsolver_add1
+opparm $_obj_boxes_dopnet_sopsolver_add1  points ( 1 ) prims ( 1 )
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_add1 keep ( on ) points ( 1 ) usept0 ( off )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_sopsolver_add1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver_add1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_add1
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_add1
+
+# Node $_obj_boxes_dopnet_sopsolver_merge1 (Sop/merge)
+set _obj_boxes_dopnet_sopsolver_merge1 = `run("opadd -e -n -v merge merge1")`
+oplocate -x `$arg2 + -9.2707999999999995` -y `$arg3 + -8.5773799999999998` $_obj_boxes_dopnet_sopsolver_merge1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_merge1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_merge1
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_merge1
+
+# Node $_obj_boxes_dopnet_sopsolver_attribwrangle1 (Sop/attribwrangle)
+set _obj_boxes_dopnet_sopsolver_attribwrangle1 = `run("opadd -e -n -v attribwrangle attribwrangle1")`
+oplocate -x `$arg2 + -0.76188100000000003` -y `$arg3 + -5.2979700000000003` $_obj_boxes_dopnet_sopsolver_attribwrangle1
+opparm $_obj_boxes_dopnet_sopsolver_attribwrangle1  bindings ( 0 ) groupbindings ( 0 )
+opparm $_obj_boxes_dopnet_sopsolver_attribwrangle1 snippet ( '@id=@ptnum;' )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_attribwrangle1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_attribwrangle1
+opuserdata -n '___Version___' -v '' $_obj_boxes_dopnet_sopsolver_attribwrangle1
+
+# Node $_obj_boxes_dopnet_sopsolver_add2 (Sop/add)
+set _obj_boxes_dopnet_sopsolver_add2 = `run("opadd -e -n -v add add2")`
+oplocate -x `$arg2 + -0.75888100000000003` -y `$arg3 + -4.25807` $_obj_boxes_dopnet_sopsolver_add2
+opparm $_obj_boxes_dopnet_sopsolver_add2  points ( 1 ) prims ( 1 )
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_add2 keep ( on ) points ( 1 ) usept0 ( off )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_add2
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_add2
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_add2
+
+# Node $_obj_boxes_dopnet_sopsolver_convertline1 (Sop/convertline)
+set _obj_boxes_dopnet_sopsolver_convertline1 = `run("opadd -e -n -v convertline convertline1")`
+oplocate -x `$arg2 + -3.0758999999999999` -y `$arg3 + -8.6147799999999997` $_obj_boxes_dopnet_sopsolver_convertline1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_convertline1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_convertline1
+opuserdata -n '___Version___' -v '1' $_obj_boxes_dopnet_sopsolver_convertline1
+
+# Node $_obj_boxes_dopnet_sopsolver_carve1 (Sop/carve)
+set _obj_boxes_dopnet_sopsolver_carve1 = `run("opadd -e -n -v carve carve1")`
+oplocate -x `$arg2 + -0.75888100000000003` -y `$arg3 + -9.7972599999999996` $_obj_boxes_dopnet_sopsolver_carve1
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_carve1 domainu1 ( 0 )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_carve1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_carve1
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_carve1
+
+# Node $_obj_boxes_dopnet_sopsolver_attribcreate1 (Sop/attribcreate::2.0)
+set _obj_boxes_dopnet_sopsolver_attribcreate1 = `run("opadd -e -n -v attribcreate::2.0 attribcreate1")`
+oplocate -x `$arg2 + -0.76233099999999998` -y `$arg3 + -11.876300000000001` $_obj_boxes_dopnet_sopsolver_attribcreate1
+opparm $_obj_boxes_dopnet_sopsolver_attribcreate1  numattr ( 1 )
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_attribcreate1 group ( '@restlength<6' ) grouptype ( prims ) name1 ( short ) class1 ( primitive ) precision1 ( 32 ) value1v ( 1 0 0 0 )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_attribcreate1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_attribcreate1
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_attribcreate1
+
+# Node $_obj_boxes_dopnet_sopsolver_attribwrangle2 (Sop/attribwrangle)
+set _obj_boxes_dopnet_sopsolver_attribwrangle2 = `run("opadd -e -n -v attribwrangle attribwrangle2")`
+oplocate -x `$arg2 + 2.3338899999999998` -y `$arg3 + -13.2027` $_obj_boxes_dopnet_sopsolver_attribwrangle2
+opparm $_obj_boxes_dopnet_sopsolver_attribwrangle2  bindings ( 0 ) groupbindings ( 0 )
+opparm $_obj_boxes_dopnet_sopsolver_attribwrangle2 class ( primitive ) snippet ( '@id=@primnum;' )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_attribwrangle2
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_attribwrangle2
+opuserdata -n '___Version___' -v '' $_obj_boxes_dopnet_sopsolver_attribwrangle2
+
+# Node $_obj_boxes_dopnet_sopsolver_attribwrangle3 (Sop/attribwrangle)
+set _obj_boxes_dopnet_sopsolver_attribwrangle3 = `run("opadd -e -n -v attribwrangle attribwrangle3")`
+oplocate -x `$arg2 + 2.3338899999999998` -y `$arg3 + -15.2805` $_obj_boxes_dopnet_sopsolver_attribwrangle3
+opparm $_obj_boxes_dopnet_sopsolver_attribwrangle3  bindings ( 0 ) groupbindings ( 0 )
+opparm $_obj_boxes_dopnet_sopsolver_attribwrangle3 class ( primitive ) snippet ( 'i@match = findattribval(1,"prim","id",@id);\nif(@match!=-1) removeprim(0,@primnum,1);' )
+opset -d on -r on -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_attribwrangle3
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_attribwrangle3
+opuserdata -n '___Version___' -v '' $_obj_boxes_dopnet_sopsolver_attribwrangle3
+
+# Node $_obj_boxes_dopnet_sopsolver_blast1 (Sop/blast)
+set _obj_boxes_dopnet_sopsolver_blast1 = `run("opadd -e -n -v blast blast1")`
+oplocate -x `$arg2 + 2.3368899999999999` -y `$arg3 + -14.194699999999999` $_obj_boxes_dopnet_sopsolver_blast1
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_blast1 group ( '@short==1' ) negate ( on )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_blast1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_blast1
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_blast1
+
+# Node $_obj_boxes_dopnet_sopsolver_connectadjacentpieces1 (Sop/connectadjacentpieces)
+set _obj_boxes_dopnet_sopsolver_connectadjacentpieces1 = `run("opadd -e -n -v connectadjacentpieces connectadjacentpieces1")`
+oplocate -x `$arg2 + -0.75888100000000003` -y `$arg3 + -8.1020099999999999` $_obj_boxes_dopnet_sopsolver_connectadjacentpieces1
+opparm -V 2 $_obj_boxes_dopnet_sopsolver_connectadjacentpieces1 connecttype ( pointcloud ) searchradius ( 100 ) centroidmethod ( bbox ) createlengthattrib ( on )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_connectadjacentpieces1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_connectadjacentpieces1
+opuserdata -n '___Version___' -v '2' $_obj_boxes_dopnet_sopsolver_connectadjacentpieces1
+
+# Node $_obj_boxes_dopnet_sopsolver_attribwrangle4 (Sop/attribwrangle)
+set _obj_boxes_dopnet_sopsolver_attribwrangle4 = `run("opadd -e -n -v attribwrangle attribwrangle4")`
+oplocate -x `$arg2 + 5.9171300000000002` -y `$arg3 + -17.507400000000001` $_obj_boxes_dopnet_sopsolver_attribwrangle4
+opparm $_obj_boxes_dopnet_sopsolver_attribwrangle4  bindings ( 0 ) groupbindings ( 0 )
+opparm $_obj_boxes_dopnet_sopsolver_attribwrangle4 class ( primitive ) snippet ( '@restlength*= 0.9;\n@restlength=clamp(@restlength,0.01,10000);\n@strength*= 1.1;\n@strength=clamp(@strength,100,1000);' )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_attribwrangle4
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_attribwrangle4
+opuserdata -n '___Version___' -v '' $_obj_boxes_dopnet_sopsolver_attribwrangle4
+
+# Node $_obj_boxes_dopnet_sopsolver_output0 (Sop/output)
+set _obj_boxes_dopnet_sopsolver_output0 = `run("opadd -e -n -v output output0")`
+oplocate -x `$arg2 + 5.0944555332733881` -y `$arg3 + -19.20960368286401` $_obj_boxes_dopnet_sopsolver_output0
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_output0
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_output0
+
+# Node $_obj_boxes_dopnet_sopsolver_convertline2 (Sop/convertline)
+set _obj_boxes_dopnet_sopsolver_convertline2 = `run("opadd -e -n -v convertline convertline2")`
+oplocate -x `$arg2 + -3.256281` -y `$arg3 + -9.7972599999999996` $_obj_boxes_dopnet_sopsolver_convertline2
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_convertline2
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_convertline2
+opuserdata -n '___Version___' -v '1' $_obj_boxes_dopnet_sopsolver_convertline2
+
+# Node $_obj_boxes_dopnet_sopsolver_splitpoints1 (Sop/splitpoints)
+set _obj_boxes_dopnet_sopsolver_splitpoints1 = `run("opadd -e -n -v splitpoints splitpoints1")`
+oplocate -x `$arg2 + 1.203719` -y `$arg3 + -9.7972599999999996` $_obj_boxes_dopnet_sopsolver_splitpoints1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_splitpoints1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_splitpoints1
+
+# Node $_obj_boxes_dopnet_sopsolver_blast3 (Sop/blast)
+set _obj_boxes_dopnet_sopsolver_blast3 = `run("opadd -e -n -v blast blast3")`
+oplocate -x `$arg2 + -0.94811000000000334` -y `$arg3 + -13.994699999999998` $_obj_boxes_dopnet_sopsolver_blast3
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver_blast3 group ( '@short==1' ) negate ( on )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver_blast3
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver_blast3
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver_blast3
+oporder -e relationship_geometry merge configure_connet add fetch_transformed_geo transform_to_initial_frame unnecessary_cleanup foreach_end1 foreach_begin1 blast2 add1 merge1 attribwrangle1 add2 convertline1 carve1 attribcreate1 attribwrangle2 attribwrangle3 blast1 connectadjacentpieces1 attribwrangle4 output0 convertline2 splitpoints1 blast3 
+opcf ..
+
+# Node $_obj_boxes_dopnet_enablesolver (Dop/enablesolver)
+set _obj_boxes_dopnet_enablesolver = `run("opadd -e -n -v enablesolver enablesolver")`
+oplocate -x `$arg2 + 15.479800000000001` -y `$arg3 + -4.0701700000000001` $_obj_boxes_dopnet_enablesolver
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet_enablesolver enable
+chkey -t 0 -v 1 -m 0 -a 0 -A 0 -T a  -F '$F == 16' $_obj_boxes_dopnet_enablesolver/enable
+chblockend
+opparm -V 19.5.640 $_obj_boxes_dopnet_enablesolver enable ( enable )
+opcolor -c 0.80000001192092896 0.80000001192092896 0.80000001192092896 $_obj_boxes_dopnet_enablesolver
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_enablesolver
+opexprlanguage -s hscript $_obj_boxes_dopnet_enablesolver
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_enablesolver
+
+# Node $_obj_boxes_dopnet_springconrel1 (Dop/springconrel)
+set _obj_boxes_dopnet_springconrel1 = `run("opadd -e -n -v springconrel springconrel1")`
+oplocate -x `$arg2 + 6.1102100000000004` -y `$arg3 + -3.9871300000000001` $_obj_boxes_dopnet_springconrel1
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet_springconrel1 activation
+chkey -t 0 -v 1 -m 0 -a 0 -A 0 -T a  -F 'constant()' $_obj_boxes_dopnet_springconrel1/activation
+chblockend
+opparm -V 19.5.640 $_obj_boxes_dopnet_springconrel1 strength ( 100 ) dataname ( ConRelHard )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_springconrel1
+opexprlanguage -s hscript $_obj_boxes_dopnet_springconrel1
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_springconrel1
+
+# Node $_obj_boxes_dopnet_sopsolver1 (Dop/sopsolver::2.0)
+set _obj_boxes_dopnet_sopsolver1 = `run("opadd -e -n -v sopsolver::2.0 sopsolver1")`
+oplocate -x `$arg2 + 16.8399` -y `$arg3 + -2.3870399999999998` $_obj_boxes_dopnet_sopsolver1
+opparm $_obj_boxes_dopnet_sopsolver1  numinputs ( 0 ) numoutputs ( 0 ) numstamps ( 0 )
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver1 uniquedataname ( on )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_sopsolver1
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver1
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver1
+opcf $_obj_boxes_dopnet_sopsolver1
+
+# Node $_obj_boxes_dopnet_sopsolver1_dop_geometry (Sop/dopimport)
+set _obj_boxes_dopnet_sopsolver1_dop_geometry = `run("opadd -e -n -v dopimport dop_geometry")`
+oplocate -x `$arg2 + 3.6318600000000001` -y `$arg3 + -1.8995500000000001` $_obj_boxes_dopnet_sopsolver1_dop_geometry
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet_sopsolver1_dop_geometry doposxform
+chkey -t 0 -v 1 -m 0 -a 0 -A 0 -T a  -F 'ch("../transformsopoutput")' $_obj_boxes_dopnet_sopsolver1_dop_geometry/doposxform
+chadd -t 0 0 $_obj_boxes_dopnet_sopsolver1_dop_geometry doxform
+chkey -t 0 -v 1 -m 0 -a 0 -A 0 -T a  -F 'ch("../transformsopoutput")' $_obj_boxes_dopnet_sopsolver1_dop_geometry/doxform
+chadd -t 0 0 $_obj_boxes_dopnet_sopsolver1_dop_geometry integrateovertime
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F '1/$FPS' $_obj_boxes_dopnet_sopsolver1_dop_geometry/integrateovertime
+chblockend
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver1_dop_geometry doppath ( '`stamps("..", "DOPNET", "../..")`' ) objpattern ( '`stamps("..", "OBJID", arg(dopnodeobjs(".."),0))`' ) importstyle ( fetch ) geodatapath ( '`stamps("..", "DATANAME", chs("../datapath"))`' ) doposxform ( doposxform ) doxform ( doxform ) adddopobjectname ( off ) pointvels ( none ) donotsim ( on )
+opcolor -c 0.60000002384185791 0.40000000596046448 1 $_obj_boxes_dopnet_sopsolver1_dop_geometry
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver1_dop_geometry
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver1_dop_geometry
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver1_dop_geometry
+
+# Node $_obj_boxes_dopnet_sopsolver1_impacts (Sop/dopimportrecords)
+set _obj_boxes_dopnet_sopsolver1_impacts = `run("opadd -e -n -v dopimportrecords impacts")`
+oplocate -x `$arg2 + 6.3931899999999997` -y `$arg3 + -1.8601000000000001` $_obj_boxes_dopnet_sopsolver1_impacts
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver1_impacts doppath ( '`stamps("..", "DOPNET", "../..")`' ) objpattern ( '`stamps("..", "OBJID", arg(dopnodeobjs(".."),0))`' ) datapath ( Impacts ) record ( Impacts )
+opcolor -c 0.60000002384185791 0.40000000596046448 1 $_obj_boxes_dopnet_sopsolver1_impacts
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver1_impacts
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver1_impacts
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver1_impacts
+
+# Node $_obj_boxes_dopnet_sopsolver1_feedbacks (Sop/dopimportrecords)
+set _obj_boxes_dopnet_sopsolver1_feedbacks = `run("opadd -e -n -v dopimportrecords feedbacks")`
+oplocate -x `$arg2 + 8.6226900000000004` -y `$arg3 + -1.9601299999999999` $_obj_boxes_dopnet_sopsolver1_feedbacks
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver1_feedbacks doppath ( '`stamps("..", "DOPNET", "../..")`' ) objpattern ( '`stamps("..", "OBJID", arg(dopnodeobjs(".."),0))`' ) datapath ( Feedback ) record ( Impacts )
+opcolor -c 0.60000002384185791 0.40000000596046448 1 $_obj_boxes_dopnet_sopsolver1_feedbacks
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver1_feedbacks
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver1_feedbacks
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver1_feedbacks
+
+# Node $_obj_boxes_dopnet_sopsolver1_relationship_geometry (Sop/object_merge)
+set _obj_boxes_dopnet_sopsolver1_relationship_geometry = `run("opadd -e -n -v object_merge relationship_geometry")`
+oplocate -x `$arg2 + 11.784800000000001` -y `$arg3 + -2.1201400000000001` $_obj_boxes_dopnet_sopsolver1_relationship_geometry
+opspareds '    group {         name    "folder0"         label   "Object Merge"          parm {             name    "xformtype"             baseparm             label   "Transform"             export  none         }         parm {             name    "xformpath"             baseparm             label   "Transform Object"             export  none         }         parm {             name    "invertxform"             baseparm             label   "Invert Transform"             export  none         }         parm {             name    "createptgroups"             baseparm             label   "Create Point Groups"             export  none         }         parm {             name    "ptgroupprefix"             baseparm             label   "Point Group Prefix"             export  none         }         parm {             name    "createprimgroups"             baseparm             label   "Create Primitive Groups"             export  none         }         parm {             name    "primgroupprefix"             baseparm             label   "Primitive Group Prefix"             export  none         }         parm {             name    "verbosegroups"             baseparm             label   "Verbose Group Names"             export  none         }         parm {             name    "createptstring"             baseparm             label   "Create Per-Point Path"             export  none         }         parm {             name    "createprimstring"             baseparm             label   "Create Per-Primitive Path"             export  none         }         parm {             name    "pathattrib"             baseparm             label   "Path Attribute"             export  none         }         parm {             name    "pack"             baseparm             label   "Pack Geometry Before Merging"             export  none         }         parm {             name    "pivot"             baseparm             label   "Pivot Location"             export  none         }         parm {             name    "viewportlod"             baseparm             label   "Display As"             export  none         }         parm {             name    "addpath"             baseparm             label   "Add Path Attribute"             export  none         }         parm {             name    "_separator"             baseparm             label   ""             export  none         }         multiparm {             name    "numobj"             label    "Number of Objects"             baseparm             default 1              parm {                 name    "enable#"                 baseparm                 label   "Enable Merge #"                 export  none             }             parm {                 name    "objpath#"                 baseparm                 label   "Object #"                 export  none             }             parm {                 name    "group#"                 baseparm                 label   "Group #"                 export  none             }             parm {                 name    "expand#"                 baseparm                 label   "Expand Group #"                 export  none             }         }      }      group {         name    "folder0_1"         label   "Custom Parameters"          parm {             name    "relnode"             label   "Relationship"             type    oppath             default { "../.." }             range   { 0 1 }             parmtag { "opfilter" "!!DOP!!" }             parmtag { "oprelative" "." }         }     }      parm {         name    "suffixfirstgroup"         baseparm         label   "Add Suffix to First Group"         export  none     } ' $_obj_boxes_dopnet_sopsolver1_relationship_geometry
+opparm $_obj_boxes_dopnet_sopsolver1_relationship_geometry  numobj ( 1 )
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet_sopsolver1_relationship_geometry relnode
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F 'import toolutils\n\nnode = hou.node(".")\nsopsolver = hou.node("..")\n\n# Attempt to discover a constraint network that we\'re wired to.\nnodetypes = ["constraintnetwork"]\nfor nodetype in nodetypes:\n    network = toolutils.findOutputNodeOfBaseType(sopsolver, nodetype)\n    if network:\n        return node.relativePathTo(network)\n\nreturn "../.."' -l p $_obj_boxes_dopnet_sopsolver1_relationship_geometry/relnode
+chblockend
+opparm -V 19.5.640 $_obj_boxes_dopnet_sopsolver1_relationship_geometry objpath1 ( '`stamps("..", "DATAPATH", chsop("relnode") + ":Relationships/" + chs(chsop("relnode") + "/relname") + "/" + chs(chsop("relnode") + "/relationship/dataname") + "/Geometry")`' ) folder0 ( 1 1 ) relnode ( relnode )
+opcolor -c 0.60000002384185791 0.40000000596046448 1 $_obj_boxes_dopnet_sopsolver1_relationship_geometry
+opset -d on -r on -h off -f off -y off -t off -l off -s off -u off -F off -c on -e on -b off $_obj_boxes_dopnet_sopsolver1_relationship_geometry
+opexprlanguage -s hscript $_obj_boxes_dopnet_sopsolver1_relationship_geometry
+opuserdata -n '___Version___' -v '19.5.640' $_obj_boxes_dopnet_sopsolver1_relationship_geometry
+oporder -e dop_geometry impacts feedbacks relationship_geometry 
+opcf ..
+
+# Node $_obj_boxes_dopnet_rbdpinconstraint1 (Dop/rbdpinconstraint)
+set _obj_boxes_dopnet_rbdpinconstraint1 = `run("opadd -e -n -v rbdpinconstraint rbdpinconstraint1")`
+oplocate -x `$arg2 + 8.5374999999999996` -y `$arg3 + -2.3870399999999998` $_obj_boxes_dopnet_rbdpinconstraint1
+chblockbegin
+chadd -t 0 0 $_obj_boxes_dopnet_rbdpinconstraint1 goalposx
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F 'ch("objectposx")' $_obj_boxes_dopnet_rbdpinconstraint1/goalposx
+chadd -t 0 0 $_obj_boxes_dopnet_rbdpinconstraint1 goalposy
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F 'ch("objectposy")' $_obj_boxes_dopnet_rbdpinconstraint1/goalposy
+chadd -t 0 0 $_obj_boxes_dopnet_rbdpinconstraint1 goalposz
+chkey -t 0 -v 0 -m 0 -a 0 -A 0 -T a  -F 'ch("objectposz")' $_obj_boxes_dopnet_rbdpinconstraint1/goalposz
+chblockend
+opparm $_obj_boxes_dopnet_rbdpinconstraint1 folder0 ( 1 1 1 )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_boxes_dopnet_rbdpinconstraint1
+opexprlanguage -s hscript $_obj_boxes_dopnet_rbdpinconstraint1
+opuserdata -n '___Version___' -v '' $_obj_boxes_dopnet_rbdpinconstraint1
+opuserdata -n '___toolcount___' -v '6' $_obj_boxes_dopnet_rbdpinconstraint1
+opuserdata -n '___toolid___' -v 'dop_rbdpinconstraint' $_obj_boxes_dopnet_rbdpinconstraint1
+oporder -e boxes bullet connet conrel_hard merge ground gravity sopsolver enablesolver springconrel1 sopsolver1 rbdpinconstraint1 
+opcf ..
+opset -p on $_obj_boxes_dopnet
+
+opcf $arg1
+opcf $arg1
+opwire -n $_obj_boxes_color3 -0 $_obj_boxes_duplicate
+opcf $arg1
+opwire -n $_obj_boxes_box1 -0 $_obj_boxes_color1
+opcf $arg1
+opwire -n $_obj_boxes_color2 -0 $_obj_boxes_color3
+opcf $arg1
+opwire -n $_obj_boxes_duplicate -0 $_obj_boxes_assemble
+opcf $arg1
+opwire -n $_obj_boxes_color1 -0 $_obj_boxes_color2
+opcf $arg1
+opwire -n $_obj_boxes_assemble -0 $_obj_boxes_pointwrangle
+opcf $arg1
+opwire -n $_obj_boxes_pointwrangle -0 $_obj_boxes_dopnet
+opcf $_obj_boxes_dopnet
+opwire -n $_obj_boxes_dopnet_boxes -0 $_obj_boxes_dopnet_bullet
+opwire -n $_obj_boxes_dopnet_bullet -0 $_obj_boxes_dopnet_connet
+opwire -n $_obj_boxes_dopnet_springconrel1 -1 $_obj_boxes_dopnet_connet
+opwire -n $_obj_boxes_dopnet_sopsolver -2 $_obj_boxes_dopnet_connet
+opwire -n $_obj_boxes_dopnet_ground -0 $_obj_boxes_dopnet_merge
+opwire -n $_obj_boxes_dopnet_connet -1 $_obj_boxes_dopnet_merge
+opwire -n $_obj_boxes_dopnet_merge -0 $_obj_boxes_dopnet_gravity
+opcf $_obj_boxes_dopnet_sopsolver
+opwire -n $_obj_boxes_dopnet_sopsolver_attribwrangle3 -0 $_obj_boxes_dopnet_sopsolver_merge
+opwire -n $_obj_boxes_dopnet_sopsolver_relationship_geometry -1 $_obj_boxes_dopnet_sopsolver_merge
+opwire -n $_obj_boxes_dopnet_sopsolver_splitpoints1 -0 $_obj_boxes_dopnet_sopsolver_configure_connet
+opwire -n $_obj_boxes_dopnet_sopsolver_unnecessary_cleanup -0 $_obj_boxes_dopnet_sopsolver_add
+opwire -n $_obj_boxes_dopnet_sopsolver_attribcreate1 -0 $_obj_boxes_dopnet_sopsolver_transform_to_initial_frame
+opwire -n $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo -1 $_obj_boxes_dopnet_sopsolver_transform_to_initial_frame
+opwire -n $_obj_boxes_dopnet_sopsolver_attribwrangle1 -0 $_obj_boxes_dopnet_sopsolver_unnecessary_cleanup
+opwire -n $_obj_boxes_dopnet_sopsolver_merge1 -0 $_obj_boxes_dopnet_sopsolver_foreach_end1
+opwire -n $_obj_boxes_dopnet_sopsolver_attribwrangle1 -0 $_obj_boxes_dopnet_sopsolver_foreach_begin1
+opwire -n $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo -0 $_obj_boxes_dopnet_sopsolver_blast2
+opwire -n $_obj_boxes_dopnet_sopsolver_blast2 -0 $_obj_boxes_dopnet_sopsolver_add1
+opwire -n $_obj_boxes_dopnet_sopsolver_foreach_begin1 -0 $_obj_boxes_dopnet_sopsolver_merge1
+opwire -n $_obj_boxes_dopnet_sopsolver_add1 -1 $_obj_boxes_dopnet_sopsolver_merge1
+opwire -n $_obj_boxes_dopnet_sopsolver_add2 -0 $_obj_boxes_dopnet_sopsolver_attribwrangle1
+opwire -n $_obj_boxes_dopnet_sopsolver_fetch_transformed_geo -0 $_obj_boxes_dopnet_sopsolver_add2
+opwire -n $_obj_boxes_dopnet_sopsolver_add -0 $_obj_boxes_dopnet_sopsolver_convertline1
+opwire -n $_obj_boxes_dopnet_sopsolver_connectadjacentpieces1 -0 $_obj_boxes_dopnet_sopsolver_carve1
+opwire -n $_obj_boxes_dopnet_sopsolver_configure_connet -0 $_obj_boxes_dopnet_sopsolver_attribcreate1
+opwire -n $_obj_boxes_dopnet_sopsolver_transform_to_initial_frame -0 $_obj_boxes_dopnet_sopsolver_attribwrangle2
+opwire -n $_obj_boxes_dopnet_sopsolver_blast1 -0 $_obj_boxes_dopnet_sopsolver_attribwrangle3
+opwire -n $_obj_boxes_dopnet_sopsolver_relationship_geometry -1 $_obj_boxes_dopnet_sopsolver_attribwrangle3
+opwire -n $_obj_boxes_dopnet_sopsolver_attribwrangle2 -0 $_obj_boxes_dopnet_sopsolver_blast1
+opwire -n $_obj_boxes_dopnet_sopsolver_unnecessary_cleanup -0 $_obj_boxes_dopnet_sopsolver_connectadjacentpieces1
+opwire -n $_obj_boxes_dopnet_sopsolver_merge -0 $_obj_boxes_dopnet_sopsolver_attribwrangle4
+opwire -n $_obj_boxes_dopnet_sopsolver_attribwrangle4 -0 $_obj_boxes_dopnet_sopsolver_output0
+opwire -n $_obj_boxes_dopnet_sopsolver_connectadjacentpieces1 -0 $_obj_boxes_dopnet_sopsolver_convertline2
+opwire -n $_obj_boxes_dopnet_sopsolver_connectadjacentpieces1 -0 $_obj_boxes_dopnet_sopsolver_splitpoints1
+opwire -n $_obj_boxes_dopnet_sopsolver_attribcreate1 -0 $_obj_boxes_dopnet_sopsolver_blast3
+opcf ..
+opcf $_obj_boxes_dopnet_sopsolver1
+opcf ..
+opcf ..
+
+set oidx = 0
+if ($argc >= 9 && "$arg9" != "") then
+    set oidx = $arg9
+endif
+
+if ($argc >= 5 && "$arg4" != "") then
+    set output = $_obj_boxes_dopnet
+    opwire -n $output -$arg5 $arg4
+endif
+if ($argc >= 6 && "$arg6" != "") then
+    set input = $_obj_boxes_box1
+    if ($arg8) then
+        opwire -n -i $arg6 -0 $input
+    else
+        opwire -n -o $oidx $arg6 -0 $input
+    endif
+endif
+opcf $saved_path
+'''
+hou.hscript(h_preamble + h_extra_args + h_cmd)
+]]></script>
+  </tool>
+
+  <tool name="add_nodes_script" label="add1 Nodes Script" icon="MISC_generic">
+    <toolMenuContext name="network">
+      <contextOpType>Sop/add</contextOpType>
+    </toolMenuContext>
+    <script scriptType="python"><![CDATA[
+import sys
+import toolutils
+
+outputitem = None
+inputindex = -1
+inputitem = None
+outputindex = -1
+
+num_args = 1
+h_extra_args = ''
+pane = toolutils.activePane(kwargs)
+if not isinstance(pane, hou.NetworkEditor):
+    pane = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
+    if pane is None:
+       hou.ui.displayMessage(
+               'Cannot create node: cannot find any network pane')
+       sys.exit(0)
+else: # We're creating this tool from the TAB menu inside a network editor
+    pane_node = pane.pwd()
+    if "outputnodename" in kwargs and "inputindex" in kwargs:
+        outputitem = pane_node.item(kwargs["outputnodename"])
+        inputindex = kwargs["inputindex"]
+        h_extra_args += 'set arg4 = "' + kwargs["outputnodename"] + '"\n'
+        h_extra_args += 'set arg5 = "' + str(inputindex) + '"\n'
+        num_args = 6
+    if "inputnodename" in kwargs and "outputindex" in kwargs:
+        inputitem = pane_node.item(kwargs["inputnodename"])
+        outputindex = kwargs["outputindex"]
+        h_extra_args += 'set arg6 = "' + kwargs["inputnodename"] + '"\n'
+        h_extra_args += 'set arg9 = "' + str(outputindex) + '"\n'
+        num_args = 9
+    if "autoplace" in kwargs:
+        autoplace = kwargs["autoplace"]
+    else:
+        autoplace = False
+    # If shift-clicked we want to auto append to the current
+    # node
+    if "shiftclick" in kwargs and kwargs["shiftclick"]:
+        if inputitem is None:
+            inputitem = pane.currentNode()
+            outputindex = 0
+    if "nodepositionx" in kwargs and             "nodepositiony" in kwargs:
+        try:
+            pos = [ float( kwargs["nodepositionx"] ),
+                    float( kwargs["nodepositiony"] )]
+        except:
+            pos = None
+    else:
+        pos = None
+
+    if not autoplace and not pane.listMode():
+        if pos is not None:
+            pass
+        elif outputitem is None:
+            pos = pane.selectPosition(inputitem, outputindex, None, -1)
+        else:
+            pos = pane.selectPosition(inputitem, outputindex,
+                                      outputitem, inputindex)
+
+    if pos is not None:
+        if "node_bbox" in kwargs:
+            size = kwargs["node_bbox"]
+            pos[0] -= size[0] / 2
+            pos[1] -= size[1] / 2
+        else:
+            pos[0] -= 0.573625
+            pos[1] -= 0.220625
+        h_extra_args += 'set arg2 = "' + str(pos[0]) + '"\n'
+        h_extra_args += 'set arg3 = "' + str(pos[1]) + '"\n'
+h_extra_args += 'set argc = "' + str(num_args) + '"\n'
+
+pane_node = pane.pwd()
+child_type = pane_node.childTypeCategory().nodeTypes()
+
+if 'circle' not in child_type:
+   hou.ui.displayMessage(
+           'Cannot create node: incompatible pane network type')
+   sys.exit(0)
+
+# First clear the node selection
+pane_node.setSelected(False, True)
+
+h_path = pane_node.path()
+h_preamble = 'set arg1 = "' + h_path + '"\n'
+h_cmd = r'''
+if ($argc < 2 || "$arg2" == "") then
+   set arg2 = 0
+endif
+if ($argc < 3 || "$arg3" == "") then
+   set arg3 = 0
+endif
+# Automatically generated script
+# $arg1 - the path to add this node
+# $arg2 - x position of the tile
+# $arg3 - y position of the tile
+# $arg4 - input node to wire to
+# $arg5 - which input to wire to
+# $arg6 - output node to wire to
+# $arg7 - the type of this node
+# $arg8 - the node is an indirect input
+# $arg9 - index of output from $arg6
+
+\set noalias = 1
+set saved_path = `execute("oppwf")`
+opcf $arg1
+
+# Node $_obj_RememberToLabelTopLevelNodes_add1 (Sop/add)
+set _obj_RememberToLabelTopLevelNodes_add1 = `run("opadd -e -n -v add add1")`
+oplocate -x `$arg2 + 0` -y `$arg3 + 0` $_obj_RememberToLabelTopLevelNodes_add1
+opparm $_obj_RememberToLabelTopLevelNodes_add1  points ( 3 ) prims ( 1 )
+opparm -V 20.0.547 $_obj_RememberToLabelTopLevelNodes_add1 points ( 3 ) prim0 ( * ) closed0 ( on ) pt0 ( -1 -0.5 0 ) pt1 ( 0.8 -0.5 0 ) pt2 ( 0.8 0.5 0 )
+opset -d off -r off -h off -f off -y off -t on -l off -s off -u off -F on -c on -e on -b off $_obj_RememberToLabelTopLevelNodes_add1
+opexprlanguage -s hscript $_obj_RememberToLabelTopLevelNodes_add1
+opuserdata -n '___Version___' -v '20.0.547' $_obj_RememberToLabelTopLevelNodes_add1
+opset -p on $_obj_RememberToLabelTopLevelNodes_add1
+opcf $arg1
+
+# Node $_obj_RememberToLabelTopLevelNodes_convertline1 (Sop/convertline)
+set _obj_RememberToLabelTopLevelNodes_convertline1 = `run("opadd -e -n -v convertline convertline1")`
+oplocate -x `$arg2 + -3.0110529000000001` -y `$arg3 + -0.74777124388009319` $_obj_RememberToLabelTopLevelNodes_convertline1
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_RememberToLabelTopLevelNodes_convertline1
+opexprlanguage -s hscript $_obj_RememberToLabelTopLevelNodes_convertline1
+opuserdata -n '___Version___' -v '2' $_obj_RememberToLabelTopLevelNodes_convertline1
+opset -p on $_obj_RememberToLabelTopLevelNodes_convertline1
+opcf $arg1
+
+# Node $_obj_RememberToLabelTopLevelNodes_merge1 (Sop/merge)
+set _obj_RememberToLabelTopLevelNodes_merge1 = `run("opadd -e -n -v merge merge1")`
+oplocate -x `$arg2 + 0.13072000000000017` -y `$arg3 + -1.6945049999999999` $_obj_RememberToLabelTopLevelNodes_merge1
+opset -d on -r on -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_RememberToLabelTopLevelNodes_merge1
+opexprlanguage -s hscript $_obj_RememberToLabelTopLevelNodes_merge1
+opuserdata -n '___Version___' -v '20.0.547' $_obj_RememberToLabelTopLevelNodes_merge1
+opset -p on $_obj_RememberToLabelTopLevelNodes_merge1
+opcf $arg1
+
+# Node $_obj_RememberToLabelTopLevelNodes_circle1 (Sop/circle)
+set _obj_RememberToLabelTopLevelNodes_circle1 = `run("opadd -e -n -v circle circle1")`
+oplocate -x `$arg2 + 2.1732067000000002` -y `$arg3 + 0` $_obj_RememberToLabelTopLevelNodes_circle1
+chblockbegin
+chadd -t 0 0 $_obj_RememberToLabelTopLevelNodes_circle1 endangle
+chkey -t 0 -v 360 -m 0 -a 0 -A 0 -T a  -F 'atan(1/1.8)' $_obj_RememberToLabelTopLevelNodes_circle1/endangle
+chblockend
+opparm -V 20.0.547 $_obj_RememberToLabelTopLevelNodes_circle1 type ( poly ) t ( -1 -0.5 0 ) scale ( 0.3 ) arc ( openarc ) angle ( 0 endangle )
+opset -d off -r off -h off -f off -y off -t off -l off -s off -u off -F on -c on -e on -b off $_obj_RememberToLabelTopLevelNodes_circle1
+opexprlanguage -s hscript $_obj_RememberToLabelTopLevelNodes_circle1
+opuserdata -n '___Version___' -v '20.0.547' $_obj_RememberToLabelTopLevelNodes_circle1
+opset -p on $_obj_RememberToLabelTopLevelNodes_circle1
+
+opcf $arg1
+opcf $arg1
+opwire -n $_obj_RememberToLabelTopLevelNodes_add1 -0 $_obj_RememberToLabelTopLevelNodes_convertline1
+opcf $arg1
+opwire -n $_obj_RememberToLabelTopLevelNodes_add1 -0 $_obj_RememberToLabelTopLevelNodes_merge1
+opwire -n $_obj_RememberToLabelTopLevelNodes_circle1 -1 $_obj_RememberToLabelTopLevelNodes_merge1
+opcf $arg1
+
+set oidx = 0
+if ($argc >= 9 && "$arg9" != "") then
+    set oidx = $arg9
+endif
+
+if ($argc >= 5 && "$arg4" != "") then
+    set output = $_obj_RememberToLabelTopLevelNodes_circle1
+    opwire -n $output -$arg5 $arg4
+endif
+if ($argc >= 6 && "$arg6" != "") then
+    set input = $_obj_RememberToLabelTopLevelNodes_add1
+    if ($arg8) then
+        opwire -n -i $arg6 -0 $input
+    else
+        opwire -n -o $oidx $arg6 -0 $input
+    endif
+endif
+opcf $saved_path
+'''
+hou.hscript(h_preamble + h_extra_args + h_cmd)
+]]></script>
+  </tool>
+
+  <shelfSetEdit name="shelf_set_1" fileLocation="C:/PROGRA~1/SIDEEF~1/HOUDIN~1.332/houdini/toolbar/ShelfDefinitions.shelf">
+    <addMemberToolshelf name="ming_tools" inPosition="14"/>
+  </shelfSetEdit>
+</shelfDocument>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="mlibcreategeo" label="Mlib CreateGeo" icon="BUTTONS_jump">
+    <script scriptType="python"><![CDATA[import MlibScript
+
+from imp import reload
+reload(MlibScript)
+
+MlibScript.MlibCreateGeo()
+]]></script>
+  </tool>
+
+  <tool name="Mlib_CreateNull" label="Mlib Create Null" icon="BUTTONS_bbox">
+    <script scriptType="python"><![CDATA[import MlibScript
+
+from imp import reload
+reload(MlibScript)
+
+MlibScript.MlibCreateNullObjm()
+]]></script>
+  </tool>
+
+  <tool name="mlibextractpath" label="Mlib Extract Path" icon="BUTTONS_all_handles">
+    <script scriptType="python"><![CDATA[import MlibScript
+
+from imp import reload
+reload(MlibScript)
+
+MlibScript.MlibExtractPath()
+]]></script>
+  </tool>
+
+  <tool name="mlibextractgroup" label="Mlib Extract Group" icon="BUTTONS_all_handles">
+    <script scriptType="python"><![CDATA[import MlibScript
+
+from imp import reload
+reload(MlibScript)
+
+MlibScript.MlibExtractGroups()
+]]></script>
+  </tool>
+
+  <tool name="mlibgeo2rs" label="Mlib Geo2Redshift" icon="SCENEGRAPH_show_over">
+    <script scriptType="python"><![CDATA[import MlibScript
+
+from imp import reload
+reload(MlibScript)
+
+MlibScript.MlibGeoToRs()
+]]></script>
+  </tool>
+
+  <tool name="mlibshotsetup" label="Mlib ShotSetup" icon="opdef:/Mlib::Object/Mlib_ShotSetup::1.1?IconSVG">
+    <script scriptType="python"><![CDATA[import MlibScript
+
+from imp import reload
+reload(MlibScript)
+
+MlibScript.MlibCreateShotSetup()
+]]></script>
+  </tool>
+
+  <toolshelf name="mlibtools" label="Mlib_Tools">
+    <memberTool name="mlibshotsetup"/>
+    <memberTool name="Mlib_CreateNull"/>
+    <memberTool name="mlibextractpath"/>
+    <memberTool name="mlibextractgroup"/>
+    <memberTool name="mlibcreategeo"/>
+    <memberTool name="mlibgeo2rs"/>
+  </toolshelf>
+</shelfDocument>
