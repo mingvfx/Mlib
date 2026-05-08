@@ -1,13 +1,13 @@
 import hou
 
-def MlibSetColor():
+def set_color():
     for n in hou.selectedItems():
         # set null shape and color
         #n.setUserData("nodeshape", "squared")
         col=(1,0,0);
         n.setColor(hou.Color(col));
         
-def MlibCreateShotSetup():
+def create_shot_setup():
     obj_level = hou.node("/obj")
     mlibshotsetup = obj_level.createNode("Mlib_ShotSetup")
         
@@ -74,7 +74,7 @@ def _create_out_null(parent, item, port_index, total_ports):
     return null
 
 
-def mlib_create_null_objm():
+def create_null_objm():
     selected_items = hou.selectedItems()
     if not selected_items:
         return 
@@ -113,7 +113,7 @@ def mlib_create_null_objm():
                     objm.setRenderFlag(True)
                     objm.setDisplayFlag(True)
 
-def MlibExtractPath():
+def extract_path():
     # get path attribute name
     button_index,text= hou.ui.readInput("Attribute Name(primitive)", buttons=("OK", "Cancel"))
     # print(button_index)
@@ -171,7 +171,7 @@ def MlibExtractPath():
             
         
 
-def MlibCreateGeo():
+def create_geo():
     #if tord==0:
     create=[]
         
@@ -209,7 +209,7 @@ def MlibCreateGeo():
             
             
             
-def MlibGeoToRs():
+def geo_to_rs():
 
     # def find_cameras(node):
     #     cameras = []
@@ -251,7 +251,7 @@ def MlibGeoToRs():
     
     
     
-def MlibExtractGroups():
+def extract_groups():
     # 1. 获取当前选择的节点
     selected_nodes = hou.selectedNodes()
     
@@ -340,3 +340,28 @@ def MlibExtractGroups():
         print(f"already extract {len(created_nodes)//2} groups")
     else:
         print("X(No groups found).")
+        
+        
+        
+        
+        
+        
+        
+        
+def align_nodes():
+    selected_nodes = hou.selectedNodes()
+
+    if len(selected_nodes) < 2:
+        print("pls select two nodes")
+        return
+
+    # compute adverage y position
+    total_y = sum(node.position()[1] for node in selected_nodes)
+    average_y = total_y / len(selected_nodes)
+
+
+    # hou.undos.group
+    with hou.undos.group("Align Nodes Horizontally"):
+        for node in selected_nodes:
+            current_x = node.position()[0]
+            node.setPosition((current_x, average_y))
