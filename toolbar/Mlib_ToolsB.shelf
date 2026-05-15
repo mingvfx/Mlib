@@ -6,60 +6,60 @@
  a single file. -->
 
   <tool name="mlibcreategeo" label="Mlib CreateGeo" icon="BUTTONS_jump">
-    <script scriptType="python"><![CDATA[import mlib_script
+    <script scriptType="python"><![CDATA[import importlib
+import mlib_script
 
-from imp import reload
-reload(mlib_script)
+importlib.reload(mlib_script)
 
 mlib_script.create_geo()
 ]]></script>
   </tool>
 
   <tool name="Mlib_CreateNull" label="Mlib Create Null" icon="BUTTONS_bbox">
-    <script scriptType="python"><![CDATA[import mlib_script
+    <script scriptType="python"><![CDATA[import importlib
+import mlib_script
 
-from imp import reload
-reload(mlib_script)
+importlib.reload(mlib_script)
 
 mlib_script.create_null_objm()
 ]]></script>
   </tool>
 
   <tool name="mlibextractpath" label="Mlib Extract Path" icon="BUTTONS_all_handles">
-    <script scriptType="python"><![CDATA[import mlib_script
+    <script scriptType="python"><![CDATA[import importlib
+import mlib_script
 
-from imp import reload
-reload(mlib_script)
+importlib.reload(mlib_script)
 
-mlib_script.mlib_extract_path()
+mlib_script.extract_path()
 ]]></script>
   </tool>
 
   <tool name="mlibextractgroup" label="Mlib Extract Group" icon="BUTTONS_all_handles">
-    <script scriptType="python"><![CDATA[import mlib_script
+    <script scriptType="python"><![CDATA[import importlib
+import mlib_script
 
-from imp import reload
-reload(mlib_script)
+importlib.reload(mlib_script)
 
 mlib_script.extract_groups()
 ]]></script>
   </tool>
 
   <tool name="mlibgeo2rs" label="Mlib Geo2Redshift" icon="SCENEGRAPH_show_over">
-    <script scriptType="python"><![CDATA[import mlib_script
+    <script scriptType="python"><![CDATA[import importlib
+import mlib_script
 
-from imp import reload
-reload(mlib_script)
+importlib.reload(mlib_script)
 
 mlib_script.geo_to_rs()
 ]]></script>
   </tool>
 
   <tool name="mlibshotsetup" label="Mlib ShotSetup" icon="opdef:/Mlib::Object/Mlib_ShotSetup::1.1?IconSVG">
-    <script scriptType="python"><![CDATA[import mlib_script
+    <script scriptType="python"><![CDATA[import importlib
+import mlib_script
 
-from imp import reload
-reload(mlib_script)
+importlib.reload(mlib_script)
 
 mlib_script.create_shot_setup()
 ]]></script>
@@ -73,15 +73,34 @@ mlib_script.create_shot_setup()
     <memberTool name="mlibcreategeo"/>
     <memberTool name="mlibgeo2rs"/>
     <memberTool name="mlibalignnodes"/>
+    <memberTool name="savecpio"/>
+    <memberTool name="importcpio"/>
   </toolshelf>
 
   <tool name="mlibalignnodes" label="Mlib Align Nodes" icon="SCENEGRAPH_purpose_guide.svg">
-    <script scriptType="python"><![CDATA[import mlib_script
+    <script scriptType="python"><![CDATA[import importlib
+import mlib_script
 
-from imp import reload
-reload(mlib_script)
+importlib.reload(mlib_script)
 
 mlib_script.align_nodes()
 ]]></script>
+  </tool>
+
+  <tool name="savecpio" label="Mlib Save Cpio" icon="BUTTONS_up">
+    <script scriptType="python"><![CDATA[import cpio_manager
+import importlib
+importlib.reload(cpio_manager) # ä¾¿äºä½ å¨æµè¯æä¿®æ¹ä»£ç å®æ¶çæ
+
+cpio_manager.copy_selected_nodes()]]></script>
+  </tool>
+
+  <tool name="importcpio" label="Mlib Import Cpio" icon="BUTTONS_down">
+    <script scriptType="python"><![CDATA[import importlib
+import cpio_manager
+
+importlib.reload(cpio_manager) 
+
+cpio_manager.show_paste_ui()]]></script>
   </tool>
 </shelfDocument>
