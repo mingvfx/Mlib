@@ -1,69 +1,244 @@
-# Mlib
-Houdini Pipeline & Automation Toolkit
+# Houdini Pipeline & Automation Toolkit
+
 A collection of robust Python tools and workflow enhancements designed to streamline daily tasks for Technical Artists and VFX professionals in Houdini. This toolkit covers network organization, cross-session node sharing, automated rendering/caching backups, and custom hotkey bindings.
 
-🌟 Modules & Features
-1. Network Automation (mlib_script.py)
+---
+
+# 🌟 Modules & Features
+
+## 1. Network Automation (`mlib_script.py`)
+
 A suite of functions to automate tedious node networking, grouping, and setup tasks.
 
-Smart Null & Object Merge (create_null_objm): Instantly creates formatted output Nulls or Object Merges based on node selection. Intelligently handles Network Dot routing and automatically inherits node colors and shapes.
+### Smart Null & Object Merge (`create_null_objm`)
+Instantly creates formatted output Nulls or Object Merges based on node selection.
 
-Attribute & Group Extraction (extract_groups / extract_path): Automatically reads Point/Primitive groups or specific attributes (e.g., path), and explodes them into neatly aligned Blast + Null node branches with color coding.
+Features:
+- Intelligently handles Network Dot routing
+- Automatically inherits node colors and shapes
 
-Auto Redshift ROP (geo_to_rs): Select any geometry nodes to instantly generate configured Redshift_ROP nodes in the /out context with standardized $HIP output paths and forced object bindings.
+### Attribute & Group Extraction (`extract_groups` / `extract_path`)
+Automatically reads Point/Primitive groups or specific attributes (e.g. `path`) and explodes them into neatly aligned Blast + Null node branches with color coding.
 
-Layout Utilities: Automatically align nodes horizontally (align_nodes) or extract setups into the /obj context cleanly (create_geo).
+### Auto Redshift ROP (`geo_to_rs`)
+Select any geometry nodes to instantly generate configured `Redshift_ROP` nodes in the `/out` context with:
+- Standardized `$HIP` output paths
+- Forced object bindings
 
-2. CPIO Node Library Manager (cpio_manager.py)
-A UI-driven system for saving, sharing, and loading Houdini node networks as .cpio packages across different sessions or team members.
+### Layout Utilities
+Utilities for:
+- Automatically aligning nodes horizontally (`align_nodes`)
+- Extracting setups into the `/obj` context cleanly (`create_geo`)
 
-H19 & H20 Auto-Compatibility: Dynamically loads PySide2 or PySide6 depending on your Houdini version.
+---
 
-Metadata Tracking: Generates a sidecar .json file alongside the .cpio to record the author, node count, and original network context.
+## 2. CPIO Node Library Manager (`cpio_manager.py`)
 
-Multi-Directory Scan: Configure multiple local or network paths to browse shared node packages in a clean, chronologically sorted UI.
+A UI-driven system for saving, sharing, and loading Houdini node networks as `.cpio` packages across different sessions or team members.
 
-3. Cache Auto-Backup (backup_cache.py)
+### Features
+
+#### H19 & H20 Auto-Compatibility
+Dynamically loads:
+- PySide2
+- PySide6
+
+depending on your Houdini version.
+
+#### Metadata Tracking
+Generates a sidecar `.json` file alongside the `.cpio` to record:
+- Author
+- Node count
+- Original network context
+
+#### Multi-Directory Scan
+Configure multiple local or network paths to browse shared node packages in a clean, chronologically sorted UI.
+
+---
+
+## 3. Cache Auto-Backup (`backup_cache.py`)
+
 A fail-safe pipeline script designed to execute before a File Cache or ROP writes to disk.
 
-Snapshot Versioning: Automatically saves your current .hip file and creates a timestamped copy (e.g., scene_20260515_103000.hip) directly in your cache output folder.
+### Snapshot Versioning
+Automatically:
+- Saves your current `.hip` file
+- Creates a timestamped copy
 
-Context-Aware: Dynamically reads the sopoutput parameter to find the target directory.
+Example:
+```plaintext
+scene_20260515_103000.hip
+```
 
-Benefit: If a simulation takes hours, you will always have the exact .hip file state that generated that specific cache right next to the .bgeo.sc files.
+The backup is stored directly in your cache output folder.
 
-🛠️ Installation & Setup (Packages Method)
+### Context-Aware
+Dynamically reads the `sopoutput` parameter to find the target directory.
+
+### Benefit
+If a simulation takes hours, you will always have the exact `.hip` file state that generated that specific cache right next to the `.bgeo.sc` files.
+
+---
+
+# 🛠️ Installation & Setup (Packages Method)
+
 We recommend using Houdini's Packages system. This keeps your core preferences clean and makes it easy to update or share the toolkit.
 
-1. Repository Structure
-Clone or extract this repository to a permanent location on your drive or network server (e.g., D:/Pipeline/Mlib_Toolkit). Ensure the folder structure is organized like this:
+---
 
-Plaintext
+## 1. Repository Structure
+
+Clone or extract this repository to a permanent location on your drive or network server.
+
+Example:
+```plaintext
+D:/Pipeline/Mlib_Toolkit
+```
+
+Ensure the folder structure is organized like this:
+
+```plaintext
 Mlib_Toolkit/
 ├── scripts/
 │   └── python/
 │       ├── mlib_script.py
 │       └── cpio_manager.py
 └── (other files)
-2. Create the Package JSON
+```
+
+---
+
+## 2. Create the Package JSON
+
 Navigate to your Houdini user preferences directory:
 
-Windows: Documents\houdiniXX.X\packages\
+### Windows
+```plaintext
+Documents/houdiniXX.X/packages/
+```
 
-Linux/Mac: ~/houdiniXX.X/packages/
-(If the packages folder does not exist, simply create it).
+### Linux / Mac
+```plaintext
+~/houdiniXX.X/packages/
+```
 
-Inside the packages folder, create a new text file named mlib_toolkit.json and paste the following configuration. Make sure to change the "MLIB_ROOT" path to your actual repository directory:
+> If the `packages` folder does not exist, simply create it.
 
-JSON
+Inside the `packages` folder, create a new text file named:
+
+```plaintext
+mlib_toolkit.json
+```
+
+Paste the following configuration and make sure to change the `MLIB_ROOT` path to your actual repository directory:
+
+```json
 {
     "env": [
         {
-            "MLIB_ROOT": "D:/Pipeline/Mlib_Toolkit" 
+            "MLIB_ROOT": "D:/Pipeline/Mlib_Toolkit"
         },
         {
             "HOUDINI_PATH": "$MLIB_ROOT"
         }
     ]
 }
-(Note: Always use forward slashes / in Houdini package paths, even on Windows).
+```
+
+> **Note:** Always use forward slashes `/` in Houdini package paths, even on Windows.
+
+---
+
+## 3. Shelf Tools Setup
+
+Now that the package is loaded, Houdini will automatically find the Python scripts.
+
+You can create shelf buttons with the following code:
+
+### Example: CPIO Manager UI
+
+```python
+import cpio_manager
+
+# Use importlib.reload(cpio_manager) during development if needed
+cpio_manager.show_paste_ui()
+```
+
+### Example: Smart Null Generator
+
+> Important: Name the internal name of this shelf tool `Mlib_CreateNull` to match the hotkey configuration.
+
+```python
+import mlib_script
+
+mlib_script.create_null_objm()
+```
+
+---
+
+## 4. File Cache Auto-Backup Setup
+
+Paste the backup script directly into the:
+- Pre-Render Script
+- or Pre-Frame Script
+
+field of your File Cache node.
+
+Also ensure the script language is set to:
+
+```plaintext
+Python
+```
+
+---
+
+## 5. Custom Hotkeys Configuration
+
+This toolkit includes a custom hotkey configuration binding the `M` key in the Network Editor to the Smart Null generator.
+
+### To install the hotkey
+
+1. Open Houdini
+2. Go to:
+
+```plaintext
+Edit > Hotkeys
+```
+
+You can either:
+- Manually assign the `M` key to your newly created `Mlib_CreateNull` shelf tool
+- OR merge the provided JSON snippet into your:
+
+```plaintext
+<HOUDINI_USER_PREF_DIR>/default.hotkeys
+```
+
+file.
+
+```json
+{
+    "name":"Houdini",
+    "version":2,
+    "houdini.version":"20.5.332",
+    "symbol":"",
+    "contexts":[
+        {
+            "symbol":"h.pane.wsheet",
+            "bindings":[
+                {
+                    "action":"h.pane.wsheet.tool:Mlib_CreateNull",
+                    "keys":["M"]
+                }
+            ]
+        }
+    ]
+}
+```
+
+---
+
+# ⚙️ Requirements
+
+- Houdini 18.5+ (Python 3 support required)
+- PySide2 or PySide6 (Native to Houdini)
+- Redshift (Only required if utilizing the `geo_to_rs` function)
